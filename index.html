@@ -344,6 +344,42 @@
     } else if (page === "Pengguna") {
   content.innerHTML = `
     <h2>Manajemen Pengguna</h2>
+
+    <div class="panel">
+      <h3>Tambah Pengguna Baru</h3>
+
+      <form id="add-user-form">
+        <p>Nama Lengkap</p>
+        <input id="new-user-name" type="text"
+          placeholder="Nama lengkap" required>
+
+        <p>Email</p>
+        <input id="new-user-email" type="email"
+          placeholder="Email pengguna" required>
+
+        <p>Password</p>
+        <input id="new-user-password" type="password"
+          placeholder="Minimal 8 karakter" minlength="8" required>
+
+        <p>Role / Jabatan</p>
+        <select id="new-user-role" required>
+          <option value="">Pilih Role</option>
+          <option value="direktur">Direktur</option>
+          <option value="project_manager">Project Manager</option>
+          <option value="finance">Finance</option>
+          <option value="procurement">Procurement</option>
+          <option value="admin">Admin</option>
+        </select>
+
+        <br><br>
+        <button type="submit" id="save-user-button">
+          + Simpan Pengguna
+        </button>
+
+        <p id="add-user-message"></p>
+      </form>
+    </div>
+
     <div class="panel">
       <h3>Daftar Pengguna</h3>
       <p id="user-loading">Memuat data pengguna...</p>
@@ -351,57 +387,107 @@
     </div>
   `;
 
-  const { data, error } = await supabaseClient
-    .from("profiles")
-    .select("id, full_name, role, is_active, created_at")
-    .order("created_at", { ascending: false });
+  const form = document.getElementById("add-user-form");
+  const message = document.getElementById("add-user-message");
+  const saveButton = document.getElementById("save-user-button");
 
-  const table = document.getElementById("user-table");
-  const loading = document.getElementById("user-loading");
+  form.addEventListener("submit", async function(event) {
+    event.preventDefault();
 
-  if (error) {
-    loading.textContent = "Gagal memuat: " + error.message;
-    return;
-  }
+    saveButton.disabled = true;
+    saveButton.textContent = "Menyimpan...";
+    message.textContent = "";
 
-  loading.textContent = "";
+    try {
+      const { data, error } = await supabaseClient.functions.invoke(
+        "create-user",
+        {
+          body: {
+            name: document.getElementById("new-user-name").value.trim(),
+            email: document.getElementById("new-user-email").value.trim(),
+            password: document.getElementById("new-user-password").value,
+            role: document.getElementById("new-user-role").value
+          }
+        }
+      );
 
-  if (!data || data.length === 0) {
-    table.textContent = "Belum ada pengguna.";
-    return;
-  }
+      if (error) throw error;
+      if (!data || !data.success) {
+        throw new Error(data?.error || "Gagal membuat pengguna");
+      }
 
-  const safe = (value) => String(value ?? "").replace(
-    /[&<>"']/g,
-    char => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    })[char]
-  );
+      message.textContent = "Pengguna berhasil dibuat!";
+      message.style.color = "green";
+      form.reset();
 
-  table.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>Nama</th>
-          <th>Role</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.map(user => `
+      await loadUsers();
+
+    } catch (error) {
+      message.textContent = "Gagal: " + error.message;
+      message.style.color = "red";
+    } finally {
+      saveButton.disabled = false;
+      saveButton.textContent = "+ Simpan Pengguna";
+    }
+  });
+
+  async function loadUsers() {
+    const table = document.getElementById("user-table");
+    const loading = document.getElementById("user-loading");
+
+    loading.textContent = "Memuat data pengguna...";
+
+    const { data, error } = await supabaseClient
+      .from("profiles")
+      .select("id, full_name, role, is_active, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      loading.textContent = "Gagal memuat: " + error.message;
+      return;
+    }
+
+    loading.textContent = "";
+
+    const safe = (value) => String(value ?? "").replace(
+      /[&<>"']/g,
+      char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]
+    );
+
+    if (!data || data.length === 0) {
+      table.textContent = "Belum ada pengguna.";
+      return;
+    }
+
+    table.innerHTML = `
+      <table>
+        <thead>
           <tr>
-            <td>${safe(user.full_name)}</td>
-            <td>${safe(user.role)}</td>
-            <td>${user.is_active ? "Aktif" : "Nonaktif"}</td>
+            <th>Nama</th>
+            <th>Role</th>
+            <th>Status</th>
           </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  `;
+        </thead>
+        <tbody>
+          ${data.map(user => `
+            <tr>
+              <td>${safe(user.full_name)}</td>
+              <td>${safe(user.role)}</td>
+              <td>${user.is_active ? "Aktif" : "Nonaktif"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  await loadUsers();
 } else {
   content.innerHTML = `
     <h2>${page}</h2>
