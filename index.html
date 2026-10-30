@@ -190,10 +190,33 @@
     SUPABASE_PUBLISHABLE_KEY
   );
 </script>
-</head>
+<style>
+  body:not(.authenticated) > *:not(#login-screen) {
+    display: none !important;
+  }
+
+  body.authenticated #login-screen {
+    display: none !important;
+  }
+
+  body:not(.authenticated) #login-screen {
+    display: flex !important;
+  }
+</style></head>
 
 <body>
-
+<div id="login-screen" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:#f1f5f9;font-family:Arial,sans-serif;padding:20px;box-sizing:border-box">
+  <form id="login-form" style="background:white;padding:30px;border-radius:14px;box-shadow:0 8px 30px #0001;width:100%;max-width:380px;box-sizing:border-box">
+    <h2 style="color:#123b63;margin-top:0">CIMS CONTRACTOR</h2>
+    <p style="color:#64748b">Silakan masuk ke akun Anda</p>
+    <label for="login-email">Email</label>
+    <input id="login-email" type="email" autocomplete="username" required style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 16px;border:1px solid #cbd5e1;border-radius:7px">
+    <label for="login-password">Kata sandi</label>
+    <input id="login-password" type="password" autocomplete="current-password" required style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 16px;border:1px solid #cbd5e1;border-radius:7px">
+    <button id="login-button" type="submit" style="width:100%;padding:12px;background:#123b63;color:white;border:0;border-radius:7px;font-weight:bold">Masuk</button>
+    <p id="login-message" role="status" style="color:#b91c1c;margin-bottom:0"></p>
+  </form>
+</div>
 <header>
   <h1>CIMS CONTRACTOR</h1>
   <p>Contractor Integrated Management System</p>
@@ -336,6 +359,66 @@
 
   showPage("Dashboard");
 </script>
+<script>
+const loginForm = document.getElementById('login-form');
 
+if (loginForm) {
+  loginForm.addEventListener('submit', async function (event) {
+    event.preventDefault();
+
+    const button = document.getElementById('login-button');
+    const message = document.getElementById('login-message');
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+
+    button.disabled = true;
+    button.textContent = 'Memeriksa...';
+    message.textContent = '';
+
+    try {
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+
+      const { data: profile, error: profileError } =
+        await supabaseClient
+          .from('profiles')
+          .select('full_name, role, is_active')
+          .eq('id', data.user.id)
+          .single();
+
+      if (profileError) throw profileError;
+
+      if (!profile.is_active) {
+        await supabaseClient.auth.signOut();
+        throw new Error('Akun Anda tidak aktif. Hubungi administrator.');
+      }
+
+      document.getElementById('login-screen').style.display = 'none';
+      document.body.classList.add('authenticated');
+
+      const header = document.querySelector('header');
+      if (header) {
+        const welcome = document.createElement('p');
+        welcome.id = 'login-welcome';
+        welcome.textContent =
+          'Login: ' + profile.full_name + ' (' + profile.role + ')';
+        header.appendChild(welcome);
+      }
+
+      message.textContent = '';
+      alert('Login berhasil. Selamat datang, ' + profile.full_name + '!');
+    } catch (error) {
+      message.textContent = error.message || 'Login gagal.';
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Masuk';
+    }
+  });
+}
+</script>
 </body>
 </html>
