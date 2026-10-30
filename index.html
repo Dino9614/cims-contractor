@@ -277,7 +277,7 @@
 </div>
 
 <script>
-  function showPage(page, button) {
+  async function showPage(page, button) {
     document.querySelectorAll("nav button").forEach(function(item) {
       item.classList.remove("active");
     });
@@ -341,20 +341,80 @@
           Mode prototipe. Data belum terhubung ke database.
         </div>
       `;
-    } else {
-      content.innerHTML = `
-        <h2>${page}</h2>
+    } else if (page === "Pengguna") {
+  content.innerHTML = `
+    <h2>Manajemen Pengguna</h2>
+    <div class="panel">
+      <h3>Daftar Pengguna</h3>
+      <p id="user-loading">Memuat data pengguna...</p>
+      <div id="user-table"></div>
+    </div>
+  `;
 
-        <div class="panel">
-          <h3>Modul ${page}</h3>
-          <p>
-            Modul ini belum diaktifkan.
-            Kita akan membangunnya secara bertahap.
-          </p>
-          <span class="badge">Dalam pengembangan</span>
-        </div>
-      `;
-    }
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("id, full_name, role, is_active, created_at")
+    .order("created_at", { ascending: false });
+
+  const table = document.getElementById("user-table");
+  const loading = document.getElementById("user-loading");
+
+  if (error) {
+    loading.textContent = "Gagal memuat: " + error.message;
+    return;
+  }
+
+  loading.textContent = "";
+
+  if (!data || data.length === 0) {
+    table.textContent = "Belum ada pengguna.";
+    return;
+  }
+
+  const safe = (value) => String(value ?? "").replace(
+    /[&<>"']/g,
+    char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[char]
+  );
+
+  table.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Nama</th>
+          <th>Role</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map(user => `
+          <tr>
+            <td>${safe(user.full_name)}</td>
+            <td>${safe(user.role)}</td>
+            <td>${user.is_active ? "Aktif" : "Nonaktif"}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+} else {
+  content.innerHTML = `
+    <h2>${page}</h2>
+    <div class="panel">
+      <h3>Modul ${page}</h3>
+      <p>
+        Modul ini belum diaktifkan.
+        Kita akan membangunnya secara bertahap.
+      </p>
+      <span class="badge">Dalam pengembangan</span>
+    </div>
+  `;
+}
   }
 
   showPage("Dashboard");
