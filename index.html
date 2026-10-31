@@ -868,7 +868,26 @@ userTable.addEventListener("click", async function(event) {
 });
 
 await loadUsers();
+} else if (page === "Master Data") {
+  content.innerHTML = `
+    <h2>Master Data</h2>
 
+    <div class="panel">
+      <h3>Master Klien</h3>
+      <p>Pengelolaan data perusahaan pemberi pekerjaan.</p>
+      <button onclick="showPage('Master Klien', this)">
+        Buka Master Klien
+      </button>
+    </div>
+
+    <div class="panel">
+      <h3>Master Area</h3>
+      <p>Pengelolaan lokasi kerja proyek.</p>
+      <button onclick="showPage('Master Area', this)">
+        Buka Master Area
+      </button>
+    </div>
+  `;
 } else if (page === "Master Area") {
 
   content.innerHTML = `
