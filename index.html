@@ -870,29 +870,169 @@ userTable.addEventListener("click", async function(event) {
 
 await loadUsers();
 
-} else if (page === "Master Data") {
+} else if (page === "Master Area") {
+
   content.innerHTML = `
-    <h2>Master Data</h2>
+    <h2>Master Area</h2>
 
     <div class="panel">
-      <h3>Master Klien</h3>
-      <p>Pengelolaan data perusahaan pemberi pekerjaan.</p>
-      <button onclick="showPage('Master Klien', this)">
-        Buka Master Klien
-      </button>
+      <h3>Tambah Area Kerja</h3>
+
+      <form id="area-form">
+        <p>Kode Area</p>
+        <input
+          id="area-code"
+          type="text"
+          placeholder="Contoh: KRH"
+          required
+        >
+
+        <p>Nama Area</p>
+        <input
+          id="area-name"
+          type="text"
+          placeholder="Contoh: Karaha"
+          required
+        >
+
+        <br><br>
+
+        <button type="submit" id="save-area-button">
+          + Simpan Area
+        </button>
+
+        <p id="area-message"></p>
+      </form>
     </div>
 
     <div class="panel">
-      <h3>Master Area</h3>
-      <p>Pengelolaan lokasi kerja proyek.</p>
-      <button onclick="showPage('Master Area', this)">
-        Buka Master Area
-      </button>
+      <h3>Daftar Area Kerja</h3>
+      <p id="area-loading">Memuat data area...</p>
+      <div id="area-table"></div>
     </div>
   `;
-} else if (page === "Master Area") {
+
+  const areaForm = document.getElementById("area-form");
+  const areaMessage = document.getElementById("area-message");
+  const saveAreaButton = document.getElementById("save-area-button");
+
+  async function loadAreas() {
+    const loading = document.getElementById("area-loading");
+    const table = document.getElementById("area-table");
+
+    const { data, error } = await supabaseClient
+      .from("areas")
+      .select("id, area_code, area_name, is_active")
+      .order("area_code", { ascending: true });
+
+    if (error) {
+      loading.textContent = "Gagal memuat area: " + error.message;
+      return;
+    }
+
+    loading.textContent = "";
+
+    if (!data || data.length === 0) {
+      table.textContent = "Belum ada data area.";
+      return;
+    }
+
+    const safe = (value) => String(value ?? "").replace(
+      /[&<>"']/g,
+      char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]
+    );
+
+    table.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Kode Area</th>
+            <th>Nama Area</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(area => `
+            <tr>
+              <td>${safe(area.area_code)}</td>
+              <td>${safe(area.area_name)}</td>
+              <td>${area.is_active ? "Aktif" : "Nonaktif"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  areaForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    saveAreaButton.disabled = true;
+    saveAreaButton.textContent = "Menyimpan...";
+    areaMessage.textContent = "";
+
+    try {
+      const areaCode = document.getElementById("area-code").value
+        .trim().toUpperCase();
+
+      const areaName = document.getElementById("area-name").value.trim();
+
+      const { data: userData, error: userError } =
+        await supabaseClient.auth.getUser();
+
+      if (userError) throw userError;
+      if (!userData.user) throw new Error("Silakan login kembali.");
+
+      const { error } = await supabaseClient
+        .from("areas")
+        .insert({
+          area_code: areaCode,
+          area_name: areaName,
+          client_name: "PT Pertamina Geothermal Energy",
+          created_by: userData.user.id
+        });
+
+      if (error) throw error;
+
+      areaMessage.textContent = "Area berhasil disimpan.";
+      areaMessage.style.color = "green";
+
+      areaForm.reset();
+      await loadAreas();
+
+    } catch (error) {
+      areaMessage.textContent = "Gagal menyimpan: " + error.message;
+      areaMessage.style.color = "red";
+    } finally {
+      saveAreaButton.disabled = false;
+      saveAreaButton.textContent = "+ Simpan Area";
+    }
+  });
+
+  await loadAreas();
+
+} else {
   content.innerHTML = `
-    DIL0
+    <h2>${page}</h2>
+    <div class="panel">
+      <h3>Modul ${page}</h3>
+      <p>
+        Modul ini belum diaktifkan.
+        Kita akan membangunnya secara bertahap.
+      </p>
+      <span class="badge">Dalam pengembangan</span>
+    </div>
+  `;
+}
+} else {
+  content.innerHTML = `
+    <h2>${page}</h2>
 
   showPage("Dashboard");
 </script>
