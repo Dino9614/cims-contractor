@@ -361,15 +361,18 @@
         <input id="new-user-password" type="password"
           placeholder="Minimal 8 karakter" minlength="8" required>
 
-        <p>Role / Jabatan</p>
-        <select id="new-user-role" required>
-          <option value="">Pilih Role</option>
-          <option value="direktur">Direktur</option>
-          <option value="project_manager">Project Manager</option>
-          <option value="finance">Finance</option>
-          <option value="procurement">Procurement</option>
-          <option value="admin">Admin</option>
-        </select>
+       
+<select id="userRole" required>
+  <option value="director">Direktur</option>
+  <option value="project_manager">Project Manager</option>
+  <option value="estimator">Estimator</option>
+  <option value="purchasing">Purchasing</option>
+  <option value="warehouse">Warehouse</option>
+  <option value="finance">Finance</option>
+  <option value="accounting">Accounting</option>
+  <option value="viewer">Viewer</option>
+</select>
+
 
         <br><br>
         <button type="submit" id="save-user-button">
