@@ -255,9 +255,16 @@ nav button.active {
   const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_Ctpwsis9YW9pn0CudzoLyA_eXxlJIIn";
 
   const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
-  );
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true
+    }
+  }
+);
 </script>
 <style>
   body:not(.authenticated) > *:not(#login-screen) {
