@@ -387,59 +387,118 @@ nav button.active {
 
     const content = document.getElementById("content");
 
-    if (page === "Dashboard") {
-      content.innerHTML = `
-        <h2>Dashboard</h2>
-        <p>Ringkasan kegiatan perusahaan kontraktor.</p>
+   if (page === "Dashboard") {
+  content.innerHTML = `
+    <h2>Dashboard</h2>
+    <p>Ringkasan kegiatan perusahaan kontraktor.</p>
 
-        <div class="cards">
-          <div class="card">
-            <p>Proyek Aktif</p>
-            <h2>0</h2>
-          </div>
+    <div class="cards">
+      <div class="card">
+        <p>Proyek Aktif</p>
+        <h2 id="dash-active">Memuat...</h2>
+      </div>
 
-          <div class="card">
-            <p>Total Penawaran</p>
-            <h2>Rp 0</h2>
-          </div>
+      <div class="card">
+        <p>Total Nilai Kontrak</p>
+        <h2 id="dash-contract">Memuat...</h2>
+      </div>
 
-          <div class="card">
-            <p>Total Purchase Order</p>
-            <h2>Rp 0</h2>
-          </div>
+      <div class="card">
+        <p>Proyek Selesai</p>
+        <h2 id="dash-finished">Memuat...</h2>
+      </div>
 
-          <div class="card">
-            <p>Menunggu Approval</p>
-            <h2>0</h2>
-          </div>
-        </div>
+      <div class="card">
+        <p>Total Proyek</p>
+        <h2 id="dash-total">Memuat...</h2>
+      </div>
+    </div>
 
-        <div class="panel">
-          <h3>Daftar Proyek</h3>
+    <div class="panel">
+      <h3>Daftar Proyek</h3>
 
-          <table>
-            <thead>
-              <tr>
-                <th>Nama Proyek</th>
-                <th>Nilai Kontrak</th>
-                <th>Status</th>
-              </tr>
-            </thead>
+      <table>
+        <thead>
+          <tr>
+            <th>Nama Proyek</th>
+            <th>Nilai Kontrak</th>
+            <th>Status</th>
+            <th>Progress</th>
+          </tr>
+        </thead>
+        <tbody id="dashboard-project-list">
+          <tr>
+            <td colspan="4">Memuat data proyek...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-            <tbody>
-              <tr>
-                <td colspan="3">
-                  Belum ada data proyek.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+    <p id="dashboard-message"></p>
+  `;
 
-        <div class="notice">
-          Mode prototipe. Data belum terhubung ke database.
-        </div>
-      `;
+  const { data: projects, error } = await supabaseClient
+    .from("projects")
+    .select("project_name, contract_value, status, progress")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    document.getElementById("dashboard-message").textContent =
+      "Gagal memuat data: " + error.message;
+    return;
+  }
+
+  const active = projects.filter(p => p.status === "Berjalan").length;
+  const finished = projects.filter(p => p.status === "Selesai").length;
+
+  const contractTotal = projects.reduce(
+    (sum, p) => sum + Number(p.contract_value || 0),
+    0
+  );
+
+  const rupiah = value =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0
+    }).format(value);
+
+  const safe = value => String(value ?? "").replace(
+    /[&<>"']/g,
+    char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[char]
+  );
+
+  document.getElementById("dash-active").textContent = active;
+  document.getElementById("dash-contract").textContent =
+    rupiah(contractTotal);
+  document.getElementById("dash-finished").textContent = finished;
+  document.getElementById("dash-total").textContent = projects.length;
+
+  const projectList =
+    document.getElementById("dashboard-project-list");
+
+  if (projects.length === 0) {
+    projectList.innerHTML = `
+      <tr>
+        <td colspan="4">Belum ada data proyek.</td>
+      </tr>
+    `;
+  } else {
+    projectList.innerHTML = projects.map(p => `
+      <tr>
+        <td>${safe(p.project_name)}</td>
+        <td>${rupiah(Number(p.contract_value || 0))}</td>
+        <td>${safe(p.status)}</td>
+        <td>${Number(p.progress || 0)}%</td>
+      </tr>
+    `).join("");
+  }
     } else if (page === "Pengguna") {
   content.innerHTML = `
     <h2>Manajemen Pengguna</h2>
