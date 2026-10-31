@@ -888,6 +888,170 @@ await loadUsers();
       </button>
     </div>
   `;
+} else if (page === "Master Klien") {
+
+  content.innerHTML = `
+    <h2>Master Klien</h2>
+
+    <div class="panel">
+      <h3>Tambah Data Klien</h3>
+
+      <form id="client-form">
+        <p>Kode Klien</p>
+        <input id="client-code" type="text"
+          placeholder="Contoh: PGE-001" required>
+
+        <p>Nama Perusahaan</p>
+        <input id="client-company" type="text"
+          placeholder="Nama perusahaan" required>
+
+        <p>Alamat</p>
+        <textarea id="client-address"
+          placeholder="Alamat perusahaan"></textarea>
+
+        <p>Nama PIC</p>
+        <input id="client-contact" type="text"
+          placeholder="Nama penanggung jawab">
+
+        <p>Nomor Telepon</p>
+        <input id="client-phone" type="text"
+          placeholder="Nomor telepon">
+
+        <p>Email</p>
+        <input id="client-email" type="email"
+          placeholder="Email perusahaan">
+
+        <p>NPWP</p>
+        <input id="client-npwp" type="text"
+          placeholder="Nomor NPWP">
+
+        <br><br>
+        <button type="submit" id="save-client-button">
+          + Simpan Klien
+        </button>
+
+        <p id="client-message"></p>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h3>Daftar Klien</h3>
+      <p id="client-loading">Memuat data klien...</p>
+      <div id="client-table"></div>
+    </div>
+  `;
+
+  const clientForm = document.getElementById("client-form");
+  const clientMessage = document.getElementById("client-message");
+  const saveClientButton =
+    document.getElementById("save-client-button");
+
+  async function loadClients() {
+    const loading = document.getElementById("client-loading");
+    const table = document.getElementById("client-table");
+
+    const { data, error } = await supabaseClient
+      .from("clients")
+      .select("id, client_code, company_name, contact_person, phone, is_active")
+      .order("client_code", { ascending: true });
+
+    if (error) {
+      loading.textContent = "Gagal memuat klien: " + error.message;
+      return;
+    }
+
+    loading.textContent = "";
+
+    if (!data || data.length === 0) {
+      table.textContent = "Belum ada data klien.";
+      return;
+    }
+
+    const safe = value => String(value ?? "").replace(
+      /[&<>"']/g,
+      char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]
+    );
+
+    table.innerHTML = `
+      <table>
+        <thead>
+          <tr>
+            <th>Kode Klien</th>
+            <th>Nama Perusahaan</th>
+            <th>PIC</th>
+            <th>Telepon</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${data.map(client => `
+            <tr>
+              <td>${safe(client.client_code)}</td>
+              <td>${safe(client.company_name)}</td>
+              <td>${safe(client.contact_person)}</td>
+              <td>${safe(client.phone)}</td>
+              <td>${client.is_active ? "Aktif" : "Nonaktif"}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  clientForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    saveClientButton.disabled = true;
+    saveClientButton.textContent = "Menyimpan...";
+    clientMessage.textContent = "";
+
+    try {
+      const { data: userData, error: userError } =
+        await supabaseClient.auth.getUser();
+
+      if (userError) throw userError;
+      if (!userData.user) throw new Error("Silakan login kembali.");
+
+      const { error } = await supabaseClient
+        .from("clients")
+        .insert({
+          client_code: document.getElementById("client-code").value
+            .trim().toUpperCase(),
+          company_name: document.getElementById("client-company").value.trim(),
+          address: document.getElementById("client-address").value.trim(),
+          contact_person: document.getElementById("client-contact").value.trim(),
+          phone: document.getElementById("client-phone").value.trim(),
+          email: document.getElementById("client-email").value.trim(),
+          npwp: document.getElementById("client-npwp").value.trim(),
+          created_by: userData.user.id
+        });
+
+      if (error) throw error;
+
+      clientMessage.textContent = "Data klien berhasil disimpan.";
+      clientMessage.style.color = "green";
+
+      clientForm.reset();
+      await loadClients();
+
+    } catch (error) {
+      clientMessage.textContent = "Gagal menyimpan: " + error.message;
+      clientMessage.style.color = "red";
+    } finally {
+      saveClientButton.disabled = false;
+      saveClientButton.textContent = "+ Simpan Klien";
+    }
+  });
+
+  await loadClients();
+
+
 } else if (page === "Master Area") {
 
   content.innerHTML = `
