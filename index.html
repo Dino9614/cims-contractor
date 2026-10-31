@@ -503,12 +503,113 @@ if (page === "Dashboard") {
     `).join("");
   }
 
+
 } else if (page === "Pengajuan Proyek") {
   content.innerHTML = `
     <h2>Pengajuan Proyek</h2>
-    <p>Halaman pengajuan proyek akan segera tersedia.</p>
+    <p>Formulir pengajuan proyek baru.</p>
+
+    <div class="panel">
+      <form id="project-form">
+        <p>Nama Proyek</p>
+        <input
+          type="text"
+          id="project-name"
+          placeholder="Masukkan nama proyek"
+          required
+        >
+
+        <p>Nama Klien</p>
+        <input
+          type="text"
+          id="client-name"
+          placeholder="Masukkan nama klien"
+          required
+        >
+
+        <p>Nilai Kontrak (Rp)</p>
+        <input
+          type="number"
+          id="contract-value"
+          min="0"
+          placeholder="Contoh: 150000000"
+          required
+        >
+
+        <p>Tanggal Mulai</p>
+        <input type="date" id="start-date" required>
+
+        <p>Tanggal Selesai</p>
+        <input type="date" id="end-date" required>
+
+        <br><br>
+        <button type="submit">Simpan Draft Proyek</button>
+      </form>
+
+      <p id="project-message"></p>
+    </div>
   `;
 
+  const projectForm = document.getElementById("project-form");
+  const projectMessage = document.getElementById("project-message");
+
+  projectForm.addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const projectName =
+      document.getElementById("project-name").value.trim();
+    const clientName =
+      document.getElementById("client-name").value.trim();
+    const contractValue =
+      Number(document.getElementById("contract-value").value);
+    const startDate =
+      document.getElementById("start-date").value;
+    const endDate =
+      document.getElementById("end-date").value;
+
+    if (new Date(endDate) < new Date(startDate)) {
+      projectMessage.textContent =
+        "Tanggal selesai tidak boleh lebih awal dari tanggal mulai.";
+      return;
+    }
+
+    projectMessage.textContent = "Menyimpan proyek...";
+
+    const { data: userData, error: userError } =
+      await supabaseClient.auth.getUser();
+
+    if (userError || !userData.user) {
+      projectMessage.textContent =
+        "Sesi login tidak ditemukan. Silakan login kembali.";
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from("projects")
+      .insert({
+        project_name: projectName,
+        client_name: clientName,
+        contract_value: contractValue,
+        start_date: startDate,
+        end_date: endDate,
+        status: "Belum Dimulai",
+        progress: 0,
+        approval_status: "draft",
+        created_by: userData.user.id
+      });
+
+    if (error) {
+      projectMessage.textContent =
+        "Gagal menyimpan proyek: " + error.message;
+      return;
+    }
+
+    projectMessage.textContent =
+      "Proyek berhasil disimpan sebagai Draft.";
+
+    projectForm.reset();
+  });
+</>
 
     } else if (page === "Pengguna") {
   content.innerHTML = `
