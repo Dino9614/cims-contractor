@@ -210,7 +210,45 @@ header p {
         font-size: 18px;
       }
     }
-  </style>
+ 
+/* SIDEBAR PERSADA APPS */
+nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 12px;
+  background: #192f50;
+}
+
+nav button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #eaf1fa;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+nav button:hover {
+  background: #29476d;
+  color: white;
+}
+
+nav button.active {
+  background: #315987;
+  color: white;
+  font-weight: bold;
+  border-left: 4px solid #75b7ff;
+  padding-left: 10px;
+}
+ </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   const SUPABASE_URL = "https://savwfujstejgygbkngxr.supabase.co";
