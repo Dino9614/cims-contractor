@@ -435,63 +435,171 @@
     }
   });
 
-  async function loadUsers() {
-    const table = document.getElementById("user-table");
-    const loading = document.getElementById("user-loading");
+  
+async function loadUsers() {
+  const table = document.getElementById("user-table");
+  const loading = document.getElementById("user-loading");
 
-    loading.textContent = "Memuat data pengguna...";
+  loading.textContent = "Memuat data pengguna...";
 
-    const { data, error } = await supabaseClient
-      .from("profiles")
-      .select("id, full_name, role, is_active, created_at")
-      .order("created_at", { ascending: false });
+  const { data, error } = await supabaseClient
+    .from("profiles")
+    .select("id, full_name, role, is_active, created_at")
+    .order("created_at", { ascending: false });
 
-    if (error) {
-      loading.textContent = "Gagal memuat: " + error.message;
-      return;
-    }
-
-    loading.textContent = "";
-
-    const safe = (value) => String(value ?? "").replace(
-      /[&<>"']/g,
-      char => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-      })[char]
-    );
-
-    if (!data || data.length === 0) {
-      table.textContent = "Belum ada pengguna.";
-      return;
-    }
-
-    table.innerHTML = `
-      <table>
-        <thead>
-          <tr>
-            <th>Nama</th>
-            <th>Role</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${data.map(user => `
-            <tr>
-              <td>${safe(user.full_name)}</td>
-              <td>${safe(user.role)}</td>
-              <td>${user.is_active ? "Aktif" : "Nonaktif"}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
-    `;
+  if (error) {
+    loading.textContent = "Gagal memuat: " + error.message;
+    return;
   }
 
-  await loadUsers();
+  loading.textContent = "";
+
+  const safe = (value) => String(value ?? "").replace(
+    /[&<>"']/g,
+    char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[char]
+  );
+
+  if (!data || data.length === 0) {
+    table.textContent = "Belum ada pengguna.";
+    return;
+  }
+
+  table.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Nama</th>
+          <th>Role</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${data.map(user => `
+          <tr>
+            <td>${safe(user.full_name)}</td>
+            <td>${safe(user.role)}</td>
+            <td>${user.is_active ? "Aktif" : "Nonaktif"}</td>
+            <td>
+              ${
+                user.role === "super_admin"
+                ? "Administrator Utama"
+                : `
+                  <button
+                    data-action="edit"
+                    data-id="${safe(user.id)}"
+                    data-name="${safe(user.full_name)}"
+                    data-role="${safe(user.role)}">
+                    Edit
+                  </button>
+
+                  <button
+                    data-action="toggle"
+                    data-id="${safe(user.id)}"
+                    data-active="${user.is_active}">
+                    ${user.is_active ? "Nonaktifkan" : "Aktifkan"}
+                  </button>
+                `
+              }
+            </td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+const userTable = document.getElementById("user-table");
+
+userTable.addEventListener("click", async function(event) {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const id = button.dataset.id;
+  const action = button.dataset.action;
+
+  if (action === "edit") {
+    const name = prompt("Nama lengkap:", button.dataset.name);
+    if (name === null) return;
+
+    const role = prompt(
+      "Masukkan role:\ndirector, project_manager, estimator, purchasing, warehouse, finance, accounting, viewer",
+      button.dataset.role
+    );
+
+    if (role === null) return;
+
+    const allowedRoles = [
+      "director",
+      "project_manager",
+      "estimator",
+      "purchasing",
+      "warehouse",
+      "finance",
+      "accounting",
+      "viewer"
+    ];
+
+    if (!name.trim()) {
+      alert("Nama tidak boleh kosong.");
+      return;
+    }
+
+    if (!allowedRoles.includes(role.trim())) {
+      alert("Role tidak valid.");
+      return;
+    }
+
+    const { error } = await supabaseClient
+      .from("profiles")
+      .update({
+        full_name: name.trim(),
+        role: role.trim()
+      })
+      .eq("id", id);
+
+    if (error) {
+      alert("Gagal mengedit: " + error.message);
+      return;
+    }
+
+    alert("Data pengguna berhasil diperbarui.");
+    await loadUsers();
+  }
+
+  if (action === "toggle") {
+    const currentlyActive = button.dataset.active === "true";
+    const newStatus = !currentlyActive;
+
+    if (!confirm(
+      newStatus
+        ? "Aktifkan kembali pengguna ini?"
+        : "Nonaktifkan pengguna ini?"
+    )) return;
+
+    const { error } = await supabaseClient
+      .from("profiles")
+      .update({ is_active: newStatus })
+      .eq("id", id);
+
+    if (error) {
+      alert("Gagal mengubah status: " + error.message);
+      return;
+    }
+
+    alert("Status pengguna berhasil diperbarui.");
+    await loadUsers();
+  }
+});
+
+await loadUsers();
+
 } else {
   content.innerHTML = `
     <h2>${page}</h2>
