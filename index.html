@@ -658,14 +658,40 @@ if (loginForm) {
       document.getElementById('login-screen').style.display = 'none';
       document.body.classList.add('authenticated');
 
-      const header = document.querySelector('header');
-      if (header) {
-        const welcome = document.createElement('p');
-        welcome.id = 'login-welcome';
-        welcome.textContent =
-          'Login: ' + profile.full_name + ' (' + profile.role + ')';
-        header.appendChild(welcome);
-      }
+      
+const header = document.querySelector('header');
+
+if (header) {
+  const welcome = document.createElement('p');
+  welcome.id = 'login-welcome';
+  welcome.textContent =
+    'Login: ' + profile.full_name + ' (' + profile.role + ')';
+  header.appendChild(welcome);
+
+  const logoutButton = document.createElement('button');
+  logoutButton.id = 'logout-button';
+  logoutButton.textContent = 'Logout';
+
+  logoutButton.addEventListener('click', async function () {
+    if (!confirm('Apakah Anda yakin ingin logout?')) return;
+
+    logoutButton.disabled = true;
+    logoutButton.textContent = 'Keluar...';
+
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+      alert('Gagal logout: ' + error.message);
+      logoutButton.disabled = false;
+      logoutButton.textContent = 'Logout';
+      return;
+    }
+
+    window.location.reload();
+  });
+
+  header.appendChild(logoutButton);
+}
 
       message.textContent = '';
       alert('Login berhasil. Selamat datang, ' + profile.full_name + '!');
