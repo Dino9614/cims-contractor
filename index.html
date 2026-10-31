@@ -440,6 +440,7 @@ nav button.active {
   const { data: projects, error } = await supabaseClient
     .from("projects")
     .select("project_name, contract_value, status, progress")
+    .eq("approval_status", "approved")
     .order("created_at", { ascending: false });
 
   if (error) {
