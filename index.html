@@ -492,18 +492,21 @@ nav button.active {
         <td colspan="4">Belum ada data proyek.</td>
       </tr>
     `;
-  } } else if (page === "Pengajuan Proyek") {
+  } }     projectList.innerHTML = projects.map(p => `
+      <tr>
+        <td>${safe(p.project_name)}</td>
+        <td>${rupiah(Number(p.contract_value || 0))}</td>
+        <td>${safe(p.status)}</td>
+        <td>${Number(p.progress || 0)}%</td>
+      </tr>
+    `).join("");
+  }
+
+} else if (page === "Pengajuan Proyek") {
   content.innerHTML = `
     <h2>Pengajuan Proyek</h2>
     <p>Halaman pengajuan proyek akan segera tersedia.</p>
-  `;
-} else {
-  content.innerHTML = `
-    <h2>Modul Belum Aktif</h2>
-    <p>Modul ini sedang dalam tahap pengembangan.</p>
-  `;
-} {
-    projectList.innerHTML = projects.map(p => `
+  `; `
       <tr>
         <td>${safe(p.project_name)}</td>
         <td>${rupiah(Number(p.contract_value || 0))}</td>
