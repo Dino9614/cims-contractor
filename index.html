@@ -888,168 +888,228 @@ await loadUsers();
       </button>
     </div>
   `;
+
 } else if (page === "Master Klien") {
 
   content.innerHTML = `
-    <h2>Master Klien</h2>
+    <h2>Master Pemilik Proyek</h2>
 
-    <div class="panel">
-      <h3>Tambah Data Klien</h3>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; align-items:start;">
 
-      <form id="client-form">
-        <p>Kode Klien</p>
-        <input id="client-code" type="text"
-          placeholder="Contoh: PGE-001" required>
+      <div class="panel">
+        <h3>Pengaturan Pemilik Proyek</h3>
 
-        <p>Nama Perusahaan</p>
-        <input id="client-company" type="text"
-          placeholder="Nama perusahaan" required>
+        <form id="owner-form">
+          <p>Nama Pemilik Proyek</p>
+          <select id="owner-client" required style="width:100%; padding:12px;">
+            <option value="">Memuat data...</option>
+          </select>
 
-        <p>Alamat</p>
-        <textarea id="client-address"
-          placeholder="Alamat perusahaan"></textarea>
+          <p style="margin-top:18px;">Pilih Area Proyek</p>
+          <div id="owner-areas" style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;">
+            Memuat area...
+          </div>
 
-        <p>Nama PIC</p>
-        <input id="client-contact" type="text"
-          placeholder="Nama penanggung jawab">
+          <br>
+          <button type="submit" id="save-owner-button">
+            + Simpan Area Pemilik Proyek
+          </button>
 
-        <p>Nomor Telepon</p>
-        <input id="client-phone" type="text"
-          placeholder="Nomor telepon">
+          <p id="owner-message"></p>
+        </form>
+      </div>
 
-        <p>Email</p>
-        <input id="client-email" type="email"
-          placeholder="Email perusahaan">
+      <div class="panel">
+        <h3>Daftar Pemilik Proyek</h3>
+        <p id="owner-loading">Memuat data...</p>
+        <div id="owner-table" style="overflow-x:auto;"></div>
+      </div>
 
-        <p>NPWP</p>
-        <input id="client-npwp" type="text"
-          placeholder="Nomor NPWP">
-
-        <br><br>
-        <button type="submit" id="save-client-button">
-          + Simpan Klien
-        </button>
-
-        <p id="client-message"></p>
-      </form>
-    </div>
-
-    <div class="panel">
-      <h3>Daftar Klien</h3>
-      <p id="client-loading">Memuat data klien...</p>
-      <div id="client-table"></div>
     </div>
   `;
 
-  const clientForm = document.getElementById("client-form");
-  const clientMessage = document.getElementById("client-message");
-  const saveClientButton =
-    document.getElementById("save-client-button");
+  const ownerForm = document.getElementById("owner-form");
+  const ownerMessage = document.getElementById("owner-message");
+  const saveOwnerButton = document.getElementById("save-owner-button");
 
-  async function loadClients() {
-    const loading = document.getElementById("client-loading");
-    const table = document.getElementById("client-table");
+  let clients = [];
+  let areas = [];
 
-    const { data, error } = await supabaseClient
-      .from("clients")
-      .select("id, client_code, company_name, contact_person, phone, is_active")
-      .order("client_code", { ascending: true });
+  const safeOwner = value => String(value ?? "").replace(
+    /[&<>"']/g,
+    char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[char]
+  );
 
-    if (error) {
-      loading.textContent = "Gagal memuat klien: " + error.message;
-      return;
-    }
+  async function loadOwnerData() {
+    const { data: clientData, error: clientError } =
+      await supabaseClient
+        .from("clients")
+        .select("id, company_name")
+        .eq("is_active", true)
+        .order("company_name");
+
+    if (clientError) throw clientError;
+
+    const { data: areaData, error: areaError } =
+      await supabaseClient
+        .from("areas")
+        .select("id, area_code, area_name")
+        .eq("is_active", true)
+        .order("area_name");
+
+    if (areaError) throw areaError;
+
+    const { data: linkData, error: linkError } =
+      await supabaseClient
+        .from("client_areas")
+        .select("client_id, area_id");
+
+    if (linkError) throw linkError;
+
+    clients = clientData || [];
+    areas = areaData || [];
+
+    const clientSelect = document.getElementById("owner-client");
+
+    clientSelect.innerHTML =
+      '<option value="">-- Pilih Pemilik Proyek --</option>' +
+      clients.map(client =>
+        `<option value="${client.id}">${safeOwner(client.company_name)}</option>`
+      ).join("");
+
+    const areaContainer = document.getElementById("owner-areas");
+
+    areaContainer.innerHTML = areas.map(area => {
+      const linked = linkData.some(
+        link => link.area_id === area.id
+      );
+
+      return `
+        <label style="display:flex; gap:8px; align-items:center; padding:10px; border:1px solid #ddd; border-radius:8px;">
+          <input type="checkbox"
+            name="owner-area"
+            value="${area.id}"
+            ${linked ? "checked" : ""}>
+          <span>
+            <strong>${safeOwner(area.area_code)}</strong><br>
+            ${safeOwner(area.area_name)}
+          </span>
+        </label>
+      `;
+    }).join("");
+
+    const table = document.getElementById("owner-table");
+    const loading = document.getElementById("owner-loading");
 
     loading.textContent = "";
 
-    if (!data || data.length === 0) {
-      table.textContent = "Belum ada data klien.";
+    if (linkData.length === 0) {
+      table.textContent = "Belum ada area yang terhubung.";
       return;
     }
 
-    const safe = value => String(value ?? "").replace(
-      /[&<>"']/g,
-      char => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-      })[char]
-    );
-
     table.innerHTML = `
-      <table>
+      <table style="width:100%; border-collapse:collapse;">
         <thead>
           <tr>
-            <th>Kode Klien</th>
-            <th>Nama Perusahaan</th>
-            <th>PIC</th>
-            <th>Telepon</th>
-            <th>Status</th>
+            <th style="padding:10px; text-align:left;">Kode Area</th>
+            <th style="padding:10px; text-align:left;">Pemilik Proyek</th>
+            <th style="padding:10px; text-align:left;">Area</th>
           </tr>
         </thead>
         <tbody>
-          ${data.map(client => `
-            <tr>
-              <td>${safe(client.client_code)}</td>
-              <td>${safe(client.company_name)}</td>
-              <td>${safe(client.contact_person)}</td>
-              <td>${safe(client.phone)}</td>
-              <td>${client.is_active ? "Aktif" : "Nonaktif"}</td>
-            </tr>
-          `).join("")}
+          ${linkData.map(link => {
+            const client = clients.find(c => c.id === link.client_id);
+            const area = areas.find(a => a.id === link.area_id);
+
+            if (!client || !area) return "";
+
+            return `
+              <tr>
+                <td style="padding:10px;">${safeOwner(area.area_code)}</td>
+                <td style="padding:10px;">${safeOwner(client.company_name)}</td>
+                <td style="padding:10px;">${safeOwner(area.area_name)}</td>
+              </tr>
+            `;
+          }).join("")}
         </tbody>
       </table>
     `;
   }
 
-  clientForm.addEventListener("submit", async function(event) {
+  ownerForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
-    saveClientButton.disabled = true;
-    saveClientButton.textContent = "Menyimpan...";
-    clientMessage.textContent = "";
+    saveOwnerButton.disabled = true;
+    saveOwnerButton.textContent = "Menyimpan...";
+    ownerMessage.textContent = "";
 
     try {
-      const { data: userData, error: userError } =
-        await supabaseClient.auth.getUser();
+      const clientId = document.getElementById("owner-client").value;
 
-      if (userError) throw userError;
-      if (!userData.user) throw new Error("Silakan login kembali.");
+      if (!clientId) {
+        throw new Error("Pilih pemilik proyek terlebih dahulu.");
+      }
 
-      const { error } = await supabaseClient
-        .from("clients")
-        .insert({
-          client_code: document.getElementById("client-code").value
-            .trim().toUpperCase(),
-          company_name: document.getElementById("client-company").value.trim(),
-          address: document.getElementById("client-address").value.trim(),
-          contact_person: document.getElementById("client-contact").value.trim(),
-          phone: document.getElementById("client-phone").value.trim(),
-          email: document.getElementById("client-email").value.trim(),
-          npwp: document.getElementById("client-npwp").value.trim(),
-          created_by: userData.user.id
-        });
+      const selectedAreas = Array.from(
+        document.querySelectorAll('input[name="owner-area"]:checked')
+      ).map(input => input.value);
 
-      if (error) throw error;
+      if (selectedAreas.length === 0) {
+        throw new Error("Pilih minimal satu area.");
+      }
 
-      clientMessage.textContent = "Data klien berhasil disimpan.";
-      clientMessage.style.color = "green";
+      const { data: existingLinks, error: existingError } =
+        await supabaseClient
+          .from("client_areas")
+          .select("area_id")
+          .eq("client_id", clientId);
 
-      clientForm.reset();
-      await loadClients();
+      if (existingError) throw existingError;
+
+      const existingIds = (existingLinks || []).map(link => link.area_id);
+
+      const newLinks = selectedAreas
+        .filter(areaId => !existingIds.includes(areaId))
+        .map(areaId => ({
+          client_id: clientId,
+          area_id: areaId
+        }));
+
+      if (newLinks.length > 0) {
+        const { error } = await supabaseClient
+          .from("client_areas")
+          .insert(newLinks);
+
+        if (error) throw error;
+      }
+
+      ownerMessage.textContent = "Hubungan pemilik proyek dan area berhasil disimpan.";
+      ownerMessage.style.color = "green";
+
+      await loadOwnerData();
 
     } catch (error) {
-      clientMessage.textContent = "Gagal menyimpan: " + error.message;
-      clientMessage.style.color = "red";
+      ownerMessage.textContent = "Gagal menyimpan: " + error.message;
+      ownerMessage.style.color = "red";
     } finally {
-      saveClientButton.disabled = false;
-      saveClientButton.textContent = "+ Simpan Klien";
+      saveOwnerButton.disabled = false;
+      saveOwnerButton.textContent = "+ Simpan Area Pemilik Proyek";
     }
   });
 
-  await loadClients();
+  try {
+    await loadOwnerData();
+  } catch (error) {
+    document.getElementById("owner-loading").textContent =
+      "Gagal memuat data: " + error.message;
+  }
 
 
 } else if (page === "Master Area") {
