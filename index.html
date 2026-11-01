@@ -1171,7 +1171,7 @@ const projectCode = "GMP-" + Date.now();
               id="save-user-button"
               class="user-primary-button"
             >
-              + Simpan Pengguna
+               Simpan Pengguna
             </button>
           </div>
 
@@ -1494,42 +1494,202 @@ const projectCode = "GMP-" + Date.now();
 
 } else if (page === "Master Klien") {
 
-  content.innerHTML = `
-    <h2>Master Pemilik Proyek</h2>
+ 
+content.innerHTML = `
+  <style>
+    .owner-page {
+      color: var(--text-color, #263445);
+    }
 
-    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:20px; align-items:start;">
+    .owner-heading {
+      margin-bottom: 22px;
+    }
 
-      <div class="panel">
+    .owner-heading h2 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .owner-heading p {
+      margin: 0;
+      color: #718096;
+      font-size: 13px;
+    }
+
+    .owner-layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 0.85fr) minmax(400px, 1.5fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .owner-card {
+      background: #fff;
+      border: 1px solid #e5eaf0;
+      border-radius: 12px;
+      padding: 22px;
+      box-shadow: 0 3px 12px rgba(20, 40, 70, 0.05);
+      min-width: 0;
+    }
+
+    .owner-card h3 {
+      margin: 0 0 5px;
+      font-size: 17px;
+      color: #24364b;
+    }
+
+    .owner-description {
+      margin: 0 0 20px;
+      font-size: 12px;
+      color: #8492a6;
+    }
+
+    .owner-field-label {
+      display: block;
+      margin: 16px 0 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #40536a;
+    }
+
+    .owner-select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px 14px;
+      border: 1px solid #dce3ec;
+      border-radius: 8px;
+      background: #fff;
+      color: #263445;
+      font-size: 13px;
+    }
+
+    .owner-area-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .owner-save-button {
+      width: 100%;
+      margin-top: 22px;
+      padding: 13px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #174b80;
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.2s;
+    }
+
+    .owner-save-button:hover {
+      background: #10385f;
+      transform: translateY(-1px);
+    }
+
+    .owner-save-button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .owner-message {
+      margin: 12px 0 0;
+      font-size: 13px;
+    }
+
+    .owner-table-wrap {
+      overflow-x: auto;
+      width: 100%;
+    }
+
+    .owner-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .owner-table th {
+      padding: 13px 12px;
+      text-align: left;
+      background: #f3f6fa;
+      color: #42546a;
+      font-weight: 700;
+      white-space: nowrap;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .owner-table td {
+      padding: 13px 12px;
+      border-bottom: 1px solid #edf0f4;
+      color: #526174;
+    }
+
+    @media (max-width: 850px) {
+      .owner-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .owner-area-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <div class="owner-page">
+    <div class="owner-heading">
+      <h2>Master Pemilik Proyek</h2>
+      <p>Pengaturan hubungan antara pemilik proyek dan area operasional.</p>
+    </div>
+
+    <div class="owner-layout">
+      <div class="owner-card">
         <h3>Pengaturan Pemilik Proyek</h3>
+        <p class="owner-description">
+          Pilih pemilik proyek dan tentukan area yang menjadi tanggung jawabnya.
+        </p>
 
         <form id="owner-form">
-          <p>Nama Pemilik Proyek</p>
-          <select id="owner-client" required style="width:100%; padding:12px;">
+          <label class="owner-field-label" for="owner-client">
+            Nama Pemilik Proyek
+          </label>
+
+          <select id="owner-client" class="owner-select" required>
             <option value="">Memuat data...</option>
           </select>
 
-          <p style="margin-top:18px;">Pilih Area Proyek</p>
-          <div id="owner-areas" style="display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px;">
+          <p class="owner-field-label">Pilih Area Proyek</p>
+
+          <div id="owner-areas" class="owner-area-grid">
             Memuat area...
           </div>
 
-          <br>
-          <button type="submit" id="save-owner-button">
-            + Simpan Area Pemilik Proyek
+          <button type="submit" id="save-owner-button"
+            class="owner-save-button">
+             Simpan Area Pemilik Proyek
           </button>
 
-          <p id="owner-message"></p>
+          <p id="owner-message" class="owner-message"></p>
         </form>
       </div>
 
-      <div class="panel">
+      <div class="owner-card">
         <h3>Daftar Pemilik Proyek</h3>
-        <p id="owner-loading">Memuat data...</p>
-        <div id="owner-table" style="overflow-x:auto;"></div>
-      </div>
+        <p class="owner-description">
+          Daftar area yang telah terhubung dengan pemilik proyek.
+        </p>
 
+        <p id="owner-loading">Memuat data...</p>
+        <div id="owner-table" class="owner-table-wrap"></div>
+      </div>
     </div>
-  `;
+  </div>
+`;
+
 
   const ownerForm = document.getElementById("owner-form");
   const ownerMessage = document.getElementById("owner-message");
