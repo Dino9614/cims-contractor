@@ -1739,6 +1739,73 @@ content.innerHTML = `
       <p>Pengaturan hubungan antara pemilik proyek dan area operasional.</p>
     </div>
 
+<div class="owner-card" style="margin-bottom:20px;">
+  <h3>+ Tambah Pemilik Proyek Baru</h3>
+  <p class="owner-description">
+    Daftarkan perusahaan baru sebagai pemilik proyek PERSADA APPS.
+    Kode perusahaan akan dibuat otomatis oleh sistem.
+  </p>
+
+  <form id="new-client-form">
+    <label class="owner-field-label" for="new-client-name">
+      Nama Perusahaan *
+    </label>
+    <input id="new-client-name" type="text"
+      class="owner-select"
+      placeholder="Contoh: PT PLN (Persero)"
+      required>
+
+    <label class="owner-field-label" for="new-client-address">
+      Alamat Perusahaan
+    </label>
+    <textarea id="new-client-address"
+      class="owner-select"
+      rows="2"
+      placeholder="Alamat lengkap perusahaan"></textarea>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
+      <div>
+        <label class="owner-field-label" for="new-client-contact">
+          Contact Person
+        </label>
+        <input id="new-client-contact" type="text"
+          class="owner-select" placeholder="Nama penanggung jawab">
+      </div>
+
+      <div>
+        <label class="owner-field-label" for="new-client-phone">
+          Nomor Telepon
+        </label>
+        <input id="new-client-phone" type="text"
+          class="owner-select" placeholder="Nomor telepon">
+      </div>
+
+      <div>
+        <label class="owner-field-label" for="new-client-email">
+          Email
+        </label>
+        <input id="new-client-email" type="email"
+          class="owner-select" placeholder="Email perusahaan">
+      </div>
+
+      <div>
+        <label class="owner-field-label" for="new-client-npwp">
+          NPWP
+        </label>
+        <input id="new-client-npwp" type="text"
+          class="owner-select" placeholder="Nomor NPWP">
+      </div>
+    </div>
+
+    <button type="submit" id="new-client-save"
+      class="owner-save-button" style="max-width:280px;">
+       Simpan Pemilik Proyek
+    </button>
+
+    <p id="new-client-message" class="owner-message"></p>
+  </form>
+</div>
+
     <div class="owner-layout">
       <div class="owner-card">
         <h3>Pengaturan Pemilik Proyek</h3>
