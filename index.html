@@ -786,35 +786,47 @@ if (page === "Dashboard") {
   clientSelect.innerHTML = "";
   clientSelect.add(new Option("Pilih Pemilik Proyek - Area", ""));
 
-  clients.forEach(client => {
-    const linkedAreas = relations.filter(
-      relation => relation.client_id === client.id
+ clients.forEach(client => {
+  const linkedAreas = relations.filter(
+    relation => relation.client_id === client.id
+  );
+
+  // Jika perusahaan belum memiliki area
+  if (linkedAreas.length === 0) {
+    clientSelect.add(
+      new Option(
+        client.company_name,
+        client.id + "|"
+      )
     );
 
-    linkedAreas.forEach(relation => {
-      const area = areas.find(
-        item => item.id === relation.area_id
+    return;
+  }
+
+  // Jika perusahaan memiliki area
+  linkedAreas.forEach(relation => {
+    const area = areas.find(
+      item => item.id === relation.area_id
+    );
+
+    if (area) {
+      const label =
+        client.company_name +
+        " - " +
+        area.area_code +
+        " (" +
+        area.area_name +
+        ")";
+
+      clientSelect.add(
+        new Option(
+          label,
+          client.id + "|" + area.id
+        )
       );
-
-      if (area) {
-        const label =
-          client.company_name +
-          " - " +
-          area.area_code +
-          " (" +
-          area.area_name +
-          ")";
-
-        clientSelect.add(
-          new Option(
-            label,
-            client.id + "|" + area.id
-          )
-        );
-      }
-    });
+    }
   });
-}
+});
 
 loadProjectClients();
   // FORMAT RUPIAH OTOMATIS
@@ -837,10 +849,11 @@ loadProjectClients();
 
     const selectedClientArea = clientSelect.value;
 
-const [clientId, areaId] = selectedClientArea
+const [clientId, selectedAreaId] = selectedClientArea
   ? selectedClientArea.split("|")
   : ["", ""];
 
+const areaId = selectedAreaId || null;
 const clientName =
   clientSelect.options[clientSelect.selectedIndex]?.text || "";
 
