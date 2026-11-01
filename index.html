@@ -288,9 +288,16 @@ nav button.active {
 );
 </script>
 <style>
-  body:not(.authenticated) > *:not(#login-screen) {
-    display: none !important;
-  }
+  body.session-checking #login-screen {
+  display: none !important;
+}
+
+body.session-checking #session-loading {
+  display: flex !important;
+}
+ body:not(.authenticated) > *:not(#login-screen):not(#session-loading) {
+  display: none !important;
+}
 
   body.authenticated #login-screen {
     display: none !important;
@@ -301,7 +308,7 @@ nav button.active {
   }
 </style></head>
 
-<body>
+<body class="session-checking">
 <div id="session-loading">
   <h2>PERSADA APPS</h2>
   <p>Memeriksa sesi pengguna...</p>
@@ -1409,6 +1416,7 @@ async function restorePersadaSession() {
 
    // Belum ada session, tampilkan halaman login
 if (!session) {
+  document.body.classList.remove('session-checking');
   document.getElementById('session-loading').style.display = 'none';
   return;
 }
@@ -1426,13 +1434,15 @@ if (!session) {
     // Periksa status akun
  if (!profile || !profile.is_active) {
   await supabaseClient.auth.signOut();
+  document.body.classList.remove('session-checking');
   document.getElementById('session-loading').style.display = 'none';
   return;
 }
     // Tampilkan aplikasi
-    document.getElementById('login-screen').style.display = 'none';
-    document.body.classList.add('authenticated');
-    document.getElementById('session-loading').style.display = 'none';
+   document.getElementById('login-screen').style.display = 'none';
+   document.body.classList.add('authenticated');
+   document.body.classList.remove('session-checking');
+   document.getElementById('session-loading').style.display = 'none';
     // Tampilkan identitas pengguna
     const header = document.querySelector('header');
 
@@ -1476,6 +1486,7 @@ if (!session) {
 
  } catch (error) {
   console.error('Session recovery error:', error);
+  document.body.classList.remove('session-checking');
   document.getElementById('session-loading').style.display = 'none';
 }
 }
