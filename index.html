@@ -902,7 +902,7 @@ const projectCode = "GMP-" + Date.now();
           contract_value: contractValue,
           start_date: startDate,
           end_date: endDate,
-          status: "Persiapan",
+          status: null,
           progress: 0,
           approval_status: "draft",
           created_by: userData.user.id
@@ -1580,6 +1580,143 @@ await loadUsers();
 
   await loadAreas();
 
+
+} else if (page === "Approval") {
+
+  content.innerHTML = `
+    <div style="margin-bottom:25px;">
+      <div style="font-size:12px;color:#64748b;font-weight:600;letter-spacing:1px;">
+        PROJECT MANAGEMENT / WORKFLOW
+      </div>
+      <h2 style="margin:8px 0;color:#12345a;font-size:25px;">
+        Approval Proyek
+      </h2>
+      <p style="color:#64748b;font-size:14px;">
+        Pengelolaan persetujuan pengajuan proyek oleh Project Manager dan Direktur.
+      </p>
+    </div>
+
+    <div class="cards">
+      <div class="card">
+        <p>Menunggu PM</p>
+        <h2 id="approval-pm-count">0</h2>
+      </div>
+
+      <div class="card">
+        <p>Menunggu Direktur</p>
+        <h2 id="approval-director-count">0</h2>
+      </div>
+
+      <div class="card">
+        <p>Perlu Revisi</p>
+        <h2 id="approval-revision-count">0</h2>
+      </div>
+
+      <div class="card">
+        <p>Ditolak</p>
+        <h2 id="approval-rejected-count">0</h2>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Daftar Pengajuan Proyek</h3>
+      <p id="approval-message">Memuat data pengajuan...</p>
+
+      <div style="overflow-x:auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>Nama Proyek</th>
+              <th>Pemilik Proyek</th>
+              <th>Nilai Kontrak</th>
+              <th>Status Approval</th>
+            </tr>
+          </thead>
+          <tbody id="approval-project-list"></tbody>
+        </table>
+      </div>
+    </div>
+  `;
+
+  const { data: projects, error } = await supabaseClient
+    .from("projects")
+    .select("id, project_name, client_name, contract_value, approval_status")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    document.getElementById("approval-message").textContent =
+      "Gagal memuat data: " + error.message;
+    return;
+  }
+
+  const pmCount = projects.filter(
+    p => p.approval_status === "pending_pm"
+  ).length;
+
+  const directorCount = projects.filter(
+    p => p.approval_status === "pending_director"
+  ).length;
+
+  const revisionCount = projects.filter(
+    p => p.approval_status === "revision"
+  ).length;
+
+  const rejectedCount = projects.filter(
+    p => p.approval_status === "rejected"
+  ).length;
+
+  document.getElementById("approval-pm-count").textContent = pmCount;
+  document.getElementById("approval-director-count").textContent = directorCount;
+  document.getElementById("approval-revision-count").textContent = revisionCount;
+  document.getElementById("approval-rejected-count").textContent = rejectedCount;
+
+  const statusLabels = {
+    draft: "Draft",
+    pending_pm: "Menunggu Persetujuan PM",
+    pending_director: "Menunggu Persetujuan Direktur",
+    approved: "Disetujui",
+    revision: "Perlu Revisi",
+    rejected: "Ditolak"
+  };
+
+  const safe = value => String(value ?? "").replace(
+    /[&<>"']/g,
+    char => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    })[char]
+  );
+
+  const rupiah = value =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0
+    }).format(Number(value || 0));
+
+  const projectList = document.getElementById("approval-project-list");
+
+  if (projects.length === 0) {
+    projectList.innerHTML = `
+      <tr><td colspan="4">Belum ada pengajuan proyek.</td></tr>
+    `;
+  } else {
+    projectList.innerHTML = projects.map(p => `
+      <tr>
+        <td>${safe(p.project_name)}</td>
+        <td>${safe(p.client_name)}</td>
+        <td>${rupiah(p.contract_value)}</td>
+        <td>${statusLabels[p.approval_status] || safe(p.approval_status)}</td>
+      </tr>
+    `).join("");
+  }
+
+  document.getElementById("approval-message").textContent =
+    "Data pengajuan proyek berhasil dimuat.";
+
 } else {
   content.innerHTML = `
     <h2>${page}</h2>
@@ -1594,7 +1731,6 @@ await loadUsers();
   `;
 }
 
-}
 
 showPage("Dashboard");
 </script>
