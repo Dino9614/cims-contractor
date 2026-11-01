@@ -889,14 +889,15 @@ if (!clientId) {
       if (userError || !userData.user) {
         throw new Error("Sesi login tidak ditemukan. Silakan login kembali.");
       }
-
+const projectCode = "GMP-" + Date.now();
       const { error } = await supabaseClient
         .from("projects")
         .insert({
-          project_name: projectName,
-          client_id: clientId,
-area_id: areaId,
-client_name: clientName,
+  project_code: projectCode,
+  project_name: projectName,
+  client_id: clientId,
+  area_id: areaId,
+  client_name: clientName,
           contract_reference: contractReference || null,
           contract_value: contractValue,
           start_date: startDate,
