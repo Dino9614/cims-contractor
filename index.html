@@ -743,6 +743,28 @@ if (page === "Dashboard") {
       <p id="project-message" style="margin:18px 0 0;font-size:14px;"></p>
 
     </div>
+
+    <!-- DAFTAR PROYEK SAYA -->
+    <div class="panel" style="
+      max-width:1000px;
+      margin-top:25px;
+      padding:28px;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      box-shadow:0 3px 12px #00000008;
+    ">
+      <h3 style="margin:0 0 8px;color:#12345a;font-size:18px;">
+        Daftar Pengajuan Proyek Saya
+      </h3>
+
+      <p style="margin:0 0 20px;color:#64748b;font-size:13px;">
+        Pantau status pengajuan, edit Draft atau Revisi, dan kirim proyek untuk persetujuan PM.
+      </p>
+
+      <div id="my-projects-list">
+        Memuat daftar proyek...
+      </div>
+    </div>
   `;
 
   const projectForm = document.getElementById("project-form");
@@ -829,6 +851,105 @@ if (page === "Dashboard") {
 });
   }
 loadProjectClients();
+  // MEMUAT DAFTAR PENGAJUAN PROYEK SAYA
+async function loadMyProjects() {
+  const projectList = document.getElementById("my-projects-list");
+
+  const safeText = value => String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+
+  projectList.innerHTML = "Memuat daftar proyek...";
+
+  try {
+    const { data: userData, error: userError } =
+      await supabaseClient.auth.getUser();
+
+    if (userError || !userData.user) {
+      throw new Error("Sesi login tidak ditemukan.");
+    }
+
+    const { data: projects, error } = await supabaseClient
+      .from("projects")
+      .select(`
+        id,
+        project_code,
+        project_name,
+        client_name,
+        contract_value,
+        start_date,
+        end_date,
+        approval_status,
+        revision_note
+      `)
+      .eq("created_by", userData.user.id)
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    if (!projects || projects.length === 0) {
+      projectList.innerHTML =
+        '<p style="color:#64748b;">Belum ada pengajuan proyek.</p>';
+      return;
+    }
+
+       const statusLabels = {
+      draft: "Draft",
+      pending_pm: "Menunggu Persetujuan PM",
+      pending_director: "Menunggu Persetujuan Direktur",
+      approved: "Disetujui",
+      revision: "Perlu Revisi",
+      rejected: "Ditolak"
+    };
+
+    projectList.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:#f1f5f9;text-align:left;">
+              <th style="padding:12px;">Kode Proyek</th>
+              <th style="padding:12px;">Nama Proyek</th>
+              <th style="padding:12px;">Pemilik Proyek</th>
+              <th style="padding:12px;">Nilai Kontrak</th>
+              <th style="padding:12px;">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${projects.map(project => `
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:12px;">${safeText(project.project_code)}</td>
+                <td style="padding:12px;">${safeText(project.project_name)}</td>
+                <td style="padding:12px;">${safeText(project.client_name)}</td>
+                <td style="padding:12px;white-space:nowrap;">
+                  Rp ${Number(project.contract_value || 0).toLocaleString("id-ID")}
+                </td>
+                <td style="padding:12px;">
+                  ${safeText(statusLabels[project.approval_status] || project.approval_status)}
+                  ${project.revision_note ? `
+                    <div style="margin-top:5px;color:#dc2626;">
+                      Catatan: ${safeText(project.revision_note)}
+                    </div>
+                  ` : ""}
+                </td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+  } catch (error) {
+    projectList.innerHTML =
+      '<p style="color:#dc2626;">Gagal memuat proyek: ' +
+      safeText(error.message) + '</p>';
+  }
+}
+
+loadMyProjects();
   // FORMAT RUPIAH OTOMATIS
   contractInput.addEventListener("input", function() {
     const angka = this.value.replace(/\D/g, "");
