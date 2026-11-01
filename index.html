@@ -918,6 +918,7 @@ async function loadMyProjects() {
               <th style="padding:12px;">Pemilik Proyek</th>
               <th style="padding:12px;">Nilai Kontrak</th>
               <th style="padding:12px;">Status</th>
+              <th style="padding:12px;">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -929,14 +930,28 @@ async function loadMyProjects() {
                 <td style="padding:12px;white-space:nowrap;">
                   Rp ${Number(project.contract_value || 0).toLocaleString("id-ID")}
                 </td>
-                <td style="padding:12px;">
-                  ${safeText(statusLabels[project.approval_status] || project.approval_status)}
-                  ${project.revision_note ? `
-                    <div style="margin-top:5px;color:#dc2626;">
-                      Catatan: ${safeText(project.revision_note)}
-                    </div>
-                  ` : ""}
-                </td>
+               <td style="padding:12px;">
+  ${safeText(statusLabels[project.approval_status] || project.approval_status)}
+  ${project.revision_note ? `
+    <div style="margin-top:5px;color:#dc2626;">
+      Catatan: ${safeText(project.revision_note)}
+    </div>
+  ` : ""}
+</td>
+
+<td style="padding:12px;">
+  ${
+    ["draft", "revision"].includes(project.approval_status)
+      ? `<button
+          type="button"
+          class="edit-project-button"
+          data-id="${safeText(project.id)}"
+          style="background:#2563eb;color:white;border:0;padding:8px 13px;border-radius:6px;cursor:pointer;">
+          Edit
+        </button>`
+      : `<span style="color:#94a3b8;">Terkunci</span>`
+  }
+</td>
               </tr>
             `).join("")}
           </tbody>
