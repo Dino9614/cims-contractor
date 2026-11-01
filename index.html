@@ -2032,7 +2032,7 @@ content.innerHTML = `
   const newClientButton = document.getElementById("new-client-save");
   const newClientMessage = document.getElementById("new-client-message");
 
-  newClientForm.addEventListener("submit", async function(event) {
+ if (newClientForm) newClientForm.addEventListener("submit", async function(event) {
     event.preventDefault();
 
     newClientButton.disabled = true;
