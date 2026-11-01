@@ -247,6 +247,27 @@ nav button.active {
   font-weight: bold;
   border-left: 4px solid #75b7ff;
   padding-left: 10px;
+}/* PERSADA APPS - SESSION LOADING */
+#session-loading {
+  position: fixed;
+  inset: 0;
+  background: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+  font-family: Arial, sans-serif;
+}
+
+#session-loading h2 {
+  color: #12345a;
+  margin-bottom: 10px;
+}
+
+#session-loading p {
+  color: #64748b;
+  font-size: 14px;
 }
  </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -281,7 +302,10 @@ nav button.active {
 </style></head>
 
 <body>
-
+<div id="session-loading">
+  <h2>PERSADA APPS</h2>
+  <p>Memeriksa sesi pengguna...</p>
+</div>
 <div id="login-screen" style="display:none;min-height:100vh;align-items:center;justify-content:center;background:#f1f5f9;font-family:Arial,sans-serif;padding:20px;box-sizing:border-box">
   <form id="login-form" style="background:white;padding:30px;border-radius:14px;box-shadow:0 8px 30px #0001;width:100%;max-width:380px;box-sizing:border-box;text-align:center">
 
@@ -1383,8 +1407,11 @@ async function restorePersadaSession() {
 
     const session = data.session;
 
-    // Belum ada session, tampilkan halaman login
-    if (!session) return;
+   // Belum ada session, tampilkan halaman login
+if (!session) {
+  document.getElementById('session-loading').style.display = 'none';
+  return;
+}
 
     // Ambil profil pengguna
     const { data: profile, error: profileError } =
@@ -1397,15 +1424,15 @@ async function restorePersadaSession() {
     if (profileError) throw profileError;
 
     // Periksa status akun
-    if (!profile || !profile.is_active) {
-      await supabaseClient.auth.signOut();
-      return;
-    }
-
+ if (!profile || !profile.is_active) {
+  await supabaseClient.auth.signOut();
+  document.getElementById('session-loading').style.display = 'none';
+  return;
+}
     // Tampilkan aplikasi
     document.getElementById('login-screen').style.display = 'none';
     document.body.classList.add('authenticated');
-
+    document.getElementById('session-loading').style.display = 'none';
     // Tampilkan identitas pengguna
     const header = document.querySelector('header');
 
@@ -1447,9 +1474,10 @@ async function restorePersadaSession() {
 
     console.log('PERSADA APPS: Session berhasil dipulihkan.');
 
-  } catch (error) {
-    console.error('Session recovery error:', error);
-  }
+ } catch (error) {
+  console.error('Session recovery error:', error);
+  document.getElementById('session-loading').style.display = 'none';
+}
 }
 
 // Jalankan saat aplikasi dibuka
