@@ -2317,6 +2317,7 @@ content.innerHTML = `
   await loadAreas();
 
 
+
 } else if (page === "Approval") {
 
   content.innerHTML = `
@@ -2333,31 +2334,15 @@ content.innerHTML = `
     </div>
 
     <div class="cards">
-      <div class="card">
-        <p>Menunggu PM</p>
-        <h2 id="approval-pm-count">0</h2>
-      </div>
-
-      <div class="card">
-        <p>Menunggu Direktur</p>
-        <h2 id="approval-director-count">0</h2>
-      </div>
-
-      <div class="card">
-        <p>Perlu Revisi</p>
-        <h2 id="approval-revision-count">0</h2>
-      </div>
-
-      <div class="card">
-        <p>Ditolak</p>
-        <h2 id="approval-rejected-count">0</h2>
-      </div>
+      <div class="card"><p>Menunggu PM</p><h2 id="approval-pm-count">0</h2></div>
+      <div class="card"><p>Menunggu Direktur</p><h2 id="approval-director-count">0</h2></div>
+      <div class="card"><p>Perlu Revisi</p><h2 id="approval-revision-count">0</h2></div>
+      <div class="card"><p>Ditolak</p><h2 id="approval-rejected-count">0</h2></div>
     </div>
 
     <div class="panel">
       <h3>Daftar Pengajuan Proyek</h3>
       <p id="approval-message">Memuat data pengajuan...</p>
-
       <div style="overflow-x:auto;">
         <table>
           <thead>
@@ -2366,6 +2351,8 @@ content.innerHTML = `
               <th>Pemilik Proyek</th>
               <th>Nilai Kontrak</th>
               <th>Status Approval</th>
+              <th>Catatan Keputusan</th>
+              <th>Aksi</th>
             </tr>
           </thead>
           <tbody id="approval-project-list"></tbody>
@@ -2374,46 +2361,8 @@ content.innerHTML = `
     </div>
   `;
 
-  const { data: projects, error } = await supabaseClient
-    .from("projects")
-    .select("id, project_name, client_name, contract_value, approval_status")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    document.getElementById("approval-message").textContent =
-      "Gagal memuat data: " + error.message;
-    return;
-  }
-
-  const pmCount = projects.filter(
-    p => p.approval_status === "pending_pm"
-  ).length;
-
-  const directorCount = projects.filter(
-    p => p.approval_status === "pending_director"
-  ).length;
-
-  const revisionCount = projects.filter(
-    p => p.approval_status === "revision"
-  ).length;
-
-  const rejectedCount = projects.filter(
-    p => p.approval_status === "rejected"
-  ).length;
-
-  document.getElementById("approval-pm-count").textContent = pmCount;
-  document.getElementById("approval-director-count").textContent = directorCount;
-  document.getElementById("approval-revision-count").textContent = revisionCount;
-  document.getElementById("approval-rejected-count").textContent = rejectedCount;
-
-  const statusLabels = {
-    draft: "Draft",
-    pending_pm: "Menunggu Persetujuan PM",
-    pending_director: "Menunggu Persetujuan Direktur",
-    approved: "Disetujui",
-    revision: "Perlu Revisi",
-    rejected: "Ditolak"
-  };
+  const approvalMessage = document.getElementById("approval-message");
+  const projectList = document.getElementById("approval-project-list");
 
   const safe = value => String(value ?? "").replace(
     /[&<>"']/g,
@@ -2433,25 +2382,238 @@ content.innerHTML = `
       maximumFractionDigits: 0
     }).format(Number(value || 0));
 
-  const projectList = document.getElementById("approval-project-list");
+  const statusLabels = {
+    draft: "Draft",
+    pending_pm: "Menunggu Persetujuan PM",
+    pending_director: "Menunggu Persetujuan Direktur",
+    approved: "Disetujui",
+    revision: "Perlu Revisi",
+    rejected: "Ditolak"
+  };
 
-  if (projects.length === 0) {
-    projectList.innerHTML = `
-      <tr><td colspan="4">Belum ada pengajuan proyek.</td></tr>
-    `;
-  } else {
-    projectList.innerHTML = projects.map(p => `
-      <tr>
-        <td>${safe(p.project_name)}</td>
-        <td>${safe(p.client_name)}</td>
-        <td>${rupiah(p.contract_value)}</td>
-        <td>${statusLabels[p.approval_status] || safe(p.approval_status)}</td>
-      </tr>
-    `).join("");
+  async function loadApprovalProjects() {
+
+    approvalMessage.textContent = "Memuat data pengajuan...";
+
+    const { data: userData, error: userError } =
+      await supabaseClient.auth.getUser();
+
+    if (userError) throw userError;
+
+    if (!userData.user) {
+      throw new Error("Sesi login tidak ditemukan. Silakan login kembali.");
+    }
+
+    const { data: profile, error: profileError } =
+      await supabaseClient
+        .from("profiles")
+        .select("role, is_active")
+        .eq("id", userData.user.id)
+        .single();
+
+    if (profileError) throw profileError;
+
+    if (!profile || !profile.is_active) {
+      throw new Error("Akun tidak aktif atau profil tidak ditemukan.");
+    }
+
+    const { data: projects, error } = await supabaseClient
+      .from("projects")
+      .select("id, project_name, client_name, contract_value, approval_status, revision_note")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+
+    document.getElementById("approval-pm-count").textContent =
+      projects.filter(p => p.approval_status === "pending_pm").length;
+
+    document.getElementById("approval-director-count").textContent =
+      projects.filter(p => p.approval_status === "pending_director").length;
+
+    document.getElementById("approval-revision-count").textContent =
+      projects.filter(p => p.approval_status === "revision").length;
+
+    document.getElementById("approval-rejected-count").textContent =
+      projects.filter(p => p.approval_status === "rejected").length;
+
+    if (projects.length === 0) {
+      projectList.innerHTML =
+        `<tr><td colspan="6">Belum ada pengajuan proyek.</td></tr>`;
+    } else {
+
+      projectList.innerHTML = projects.map(p => {
+
+        let canDecide = false;
+
+        if (
+          profile.role === "project_manager" &&
+          p.approval_status === "pending_pm"
+        ) {
+          canDecide = true;
+        }
+
+        if (
+          profile.role === "director" &&
+          p.approval_status === "pending_director"
+        ) {
+          canDecide = true;
+        }
+
+        const actionButtons = canDecide ? `
+          <textarea
+            data-notes-for="${safe(p.id)}"
+            placeholder="Catatan untuk revisi atau penolakan..."
+            rows="2"
+            style="width:190px;padding:8px;border:1px solid #cbd5e1;border-radius:6px;"
+          ></textarea>
+
+          <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;">
+            <button data-project-id="${safe(p.id)}"
+              data-decision="approve"
+              style="background:#15803d;color:white;padding:7px 10px;border:0;border-radius:5px;cursor:pointer;">
+              Setujui
+            </button>
+
+            <button data-project-id="${safe(p.id)}"
+              data-decision="revision"
+              style="background:#d97706;color:white;padding:7px 10px;border:0;border-radius:5px;cursor:pointer;">
+              Minta Revisi
+            </button>
+
+            <button data-project-id="${safe(p.id)}"
+              data-decision="reject"
+              style="background:#dc2626;color:white;padding:7px 10px;border:0;border-radius:5px;cursor:pointer;">
+              Tolak
+            </button>
+          </div>
+        ` : "-";
+
+        return `
+          <tr>
+            <td>${safe(p.project_name)}</td>
+            <td>${safe(p.client_name)}</td>
+            <td>${rupiah(p.contract_value)}</td>
+            <td>${statusLabels[p.approval_status] || safe(p.approval_status)}</td>
+            <td>${safe(p.revision_note || "-")}</td>
+            <td>${actionButtons}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+
+    approvalMessage.textContent =
+      "Data pengajuan proyek berhasil dimuat.";
   }
 
-  document.getElementById("approval-message").textContent =
-    "Data pengajuan proyek berhasil dimuat.";
+  try {
+    await loadApprovalProjects();
+  } catch (error) {
+    approvalMessage.textContent =
+      "Gagal memuat data: " + error.message;
+  }
+
+  projectList.addEventListener("click", async function(event) {
+
+    const button = event.target.closest("button[data-decision]");
+
+    if (!button) return;
+
+    const projectId = button.dataset.projectId;
+    const decision = button.dataset.decision;
+
+    const notesField = projectList.querySelector(
+      `textarea[data-notes-for="${projectId}"]`
+    );
+
+    const notes = notesField ? notesField.value.trim() : "";
+
+    if (
+      (decision === "revision" || decision === "reject") &&
+      !notes
+    ) {
+      alert("Catatan wajib diisi untuk revisi atau penolakan.");
+      return;
+    }
+
+    const confirmation = {
+      approve: "Apakah Anda yakin ingin menyetujui proyek ini?",
+      revision: "Apakah Anda yakin ingin meminta revisi proyek ini?",
+      reject: "Apakah Anda yakin ingin menolak proyek ini?"
+    };
+
+    if (!confirm(confirmation[decision])) return;
+
+    const actionButtons = projectList.querySelectorAll(
+      `button[data-project-id="${projectId}"]`
+    );
+
+    actionButtons.forEach(item => item.disabled = true);
+
+    approvalMessage.textContent = "Memproses keputusan...";
+
+    try {
+
+      const { data: userData, error: userError } =
+        await supabaseClient.auth.getUser();
+
+      if (userError) throw userError;
+
+      const { data: profile, error: profileError } =
+        await supabaseClient
+          .from("profiles")
+          .select("role, is_active")
+          .eq("id", userData.user.id)
+          .single();
+
+      if (profileError) throw profileError;
+
+      if (!profile || !profile.is_active) {
+        throw new Error("Akun tidak aktif.");
+      }
+
+      let functionName;
+
+      if (
+        profile.role === "project_manager" &&
+        decision &&
+        button.closest("tr").querySelector("td:nth-child(4)")
+          .textContent.includes("PM")
+      ) {
+        functionName = "pm_decide_project";
+      } else if (
+        profile.role === "director" &&
+        button.closest("tr").querySelector("td:nth-child(4)")
+          .textContent.includes("Direktur")
+      ) {
+        functionName = "director_decide_project";
+      } else {
+        throw new Error("Role Anda tidak sesuai dengan tahap persetujuan proyek ini.");
+      }
+
+      const { error: decisionError } = await supabaseClient.rpc(
+        functionName,
+        {
+          p_project_id: projectId,
+          p_decision: decision,
+          p_notes: notes || null
+        }
+      );
+
+      if (decisionError) throw decisionError;
+
+      approvalMessage.textContent =
+        "Keputusan berhasil disimpan.";
+
+      await loadApprovalProjects();
+
+    } catch (error) {
+
+      approvalMessage.textContent =
+        "Gagal memproses keputusan: " + error.message;
+
+      actionButtons.forEach(item => item.disabled = false);
+    }
+  });
 
 } else {
   content.innerHTML = `
