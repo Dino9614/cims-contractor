@@ -1539,13 +1539,15 @@ if (action === "edit") {
       saveEditButton.disabled = false;
       saveEditButton.textContent = "Simpan Perubahan";
     }
-  });
-}
+  }); // Menutup editForm.addEventListener
 
-  await loadUsers();
+} // Menutup if action === edit
 
-    { else if (page === "Master Data") {
+}); // Menutup userTable.addEventListener
 
+await loadUsers();
+
+} else if (page === "Master Data") {
   content.innerHTML = `
     <div style="margin-bottom:24px;">
       <h2 style="margin:0 0 6px; font-size:24px; color:#263445;">
