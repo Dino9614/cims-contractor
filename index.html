@@ -1470,83 +1470,122 @@ const projectCode = "GMP-" + Date.now();
 
   await loadUsers();
 
+
 } else if (page === "Master Data") {
 
   content.innerHTML = `
-  <div style="margin-bottom:24px;">
-    <h2 style="margin:0 0 6px; font-size:24px; color:#263445;">
-      Master Data
-    </h2>
-    <p style="margin:0; color:#718096; font-size:13px;">
-      Pengelolaan data utama perusahaan dan operasional proyek PERSADA APPS.
-    </p>
-  </div>
-
-  <div style="
-    background:#ffffff;
-    border:1px solid #e5eaf0;
-    border-radius:14px;
-    padding:26px;
-    max-width:560px;
-    box-shadow:0 4px 14px rgba(20,40,70,0.05);
-  ">
-    <div style="
-      width:48px;
-      height:48px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      border-radius:12px;
-      background:#eaf2fb;
-      color:#174b80;
-      font-size:24px;
-      margin-bottom:18px;
-    ">
-      🏢
+    <div style="margin-bottom:24px;">
+      <h2 style="margin:0 0 6px; font-size:24px; color:#263445;">
+        Master Data
+      </h2>
+      <p style="margin:0; color:#718096; font-size:13px;">
+        Pengelolaan data utama perusahaan dan operasional proyek PERSADA APPS.
+      </p>
     </div>
 
-    <h3 style="margin:0 0 8px; color:#263445; font-size:18px;">
-      Master Klien
-    </h3>
-
-    <p style="
-      margin:0 0 22px;
-      color:#718096;
-      font-size:13px;
-      line-height:1.7;
+    <div style="
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:20px;
+      align-items:stretch;
     ">
-      Kelola data perusahaan pemberi pekerjaan, termasuk informasi
-      perusahaan yang menjadi pemilik proyek.
-    </p>
 
-    <button
-      onclick="showPage('Master Klien', this)"
-      style="
-        background:#174b80;
-        color:#ffffff;
-        border:none;
-        border-radius:8px;
-        padding:12px 20px;
-        font-size:13px;
-        font-weight:600;
-        cursor:pointer;
-      "
-    >
-      Buka Master Klien →
-    </button>
-  </div>
-`;
+      <div style="
+        background:#ffffff;
+        border:1px solid #e5eaf0;
+        border-radius:14px;
+        padding:26px;
+        box-shadow:0 4px 14px rgba(20,40,70,0.05);
+      ">
+        <div style="
+          width:48px;
+          height:48px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          border-radius:12px;
+          background:#eaf2fb;
+          color:#174b80;
+          font-size:24px;
+          margin-bottom:18px;
+        ">🏢</div>
 
-    <div class="panel">
-      <h3>Master Area</h3>
-      <p>Pengelolaan lokasi kerja proyek.</p>
-      <button onclick="showPage('Master Area', this)">
-        Buka Master Area
-      </button>
+        <h3 style="margin:0 0 8px;color:#263445;font-size:18px;">
+          Master Klien
+        </h3>
+
+        <p style="margin:0 0 22px;color:#718096;font-size:13px;line-height:1.7;">
+          Kelola data perusahaan pemberi pekerjaan, termasuk informasi
+          perusahaan yang menjadi pemilik proyek.
+        </p>
+
+        <button
+          onclick="showPage('Master Klien', this)"
+          style="
+            background:#174b80;
+            color:#ffffff;
+            border:none;
+            border-radius:8px;
+            padding:12px 20px;
+            font-size:13px;
+            font-weight:600;
+            cursor:pointer;
+          "
+        >
+          Buka Master Klien →
+        </button>
+      </div>
+
+      <div style="
+        background:#ffffff;
+        border:1px solid #e5eaf0;
+        border-radius:14px;
+        padding:26px;
+        box-shadow:0 4px 14px rgba(20,40,70,0.05);
+      ">
+        <div style="
+          width:48px;
+          height:48px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          border-radius:12px;
+          background:#eaf2fb;
+          color:#174b80;
+          font-size:24px;
+          margin-bottom:18px;
+        ">📍</div>
+
+        <h3 style="margin:0 0 8px;color:#263445;font-size:18px;">
+          Master Area
+        </h3>
+
+        <p style="margin:0 0 22px;color:#718096;font-size:13px;line-height:1.7;">
+          Kelola data lokasi kerja dan area operasional proyek perusahaan.
+        </p>
+
+        <button
+          onclick="showPage('Master Area', this)"
+          style="
+            background:#174b80;
+            color:#ffffff;
+            border:none;
+            border-radius:8px;
+            padding:12px 20px;
+            font-size:13px;
+            font-weight:600;
+            cursor:pointer;
+          "
+        >
+          Buka Master Area →
+        </button>
+      </div>
+
     </div>
   `;
 
 } else if (page === "Master Klien") {
+
 
  
 content.innerHTML = `
