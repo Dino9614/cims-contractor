@@ -775,7 +775,8 @@ margin-top:25px;
   const saveButton = document.getElementById("save-project-button");
   // MEMUAT DATA MASTER KLIEN
   const clientSelect = document.getElementById("client-name");
-
+// PENANDA MODE EDIT PROYEK
+let editingProjectId = null;
   async function loadProjectClients() {
   clientSelect.innerHTML =
     '<option value="">Memuat data Pemilik Proyek - Area...</option>';
@@ -881,7 +882,10 @@ async function loadMyProjects() {
         id,
         project_code,
         project_name,
+        client_id,
+        area_id,
         client_name,
+        contract_reference,
         contract_value,
         start_date,
         end_date,
@@ -899,7 +903,7 @@ async function loadMyProjects() {
       return;
     }
 
-       const statusLabels = {
+    const statusLabels = {
       draft: "Draft",
       pending_pm: "Menunggu Persetujuan PM",
       pending_director: "Menunggu Persetujuan Direktur",
@@ -930,28 +934,27 @@ async function loadMyProjects() {
                 <td style="padding:12px;white-space:nowrap;">
                   Rp ${Number(project.contract_value || 0).toLocaleString("id-ID")}
                 </td>
-               <td style="padding:12px;">
-  ${safeText(statusLabels[project.approval_status] || project.approval_status)}
-  ${project.revision_note ? `
-    <div style="margin-top:5px;color:#dc2626;">
-      Catatan: ${safeText(project.revision_note)}
-    </div>
-  ` : ""}
-</td>
-
-<td style="padding:12px;">
-  ${
-    ["draft", "revision"].includes(project.approval_status)
-      ? `<button
-          type="button"
-          class="edit-project-button"
-          data-id="${safeText(project.id)}"
-          style="background:#2563eb;color:white;border:0;padding:8px 13px;border-radius:6px;cursor:pointer;">
-          Edit
-        </button>`
-      : `<span style="color:#94a3b8;">Terkunci</span>`
-  }
-</td>
+                <td style="padding:12px;">
+                  ${safeText(statusLabels[project.approval_status] || project.approval_status)}
+                  ${project.revision_note ? `
+                    <div style="margin-top:5px;color:#dc2626;">
+                      Catatan: ${safeText(project.revision_note)}
+                    </div>
+                  ` : ""}
+                </td>
+                <td style="padding:12px;">
+                  ${
+                    ["draft", "revision"].includes(project.approval_status)
+                      ? `<button
+                          type="button"
+                          class="edit-project-button"
+                          data-id="${safeText(project.id)}"
+                          style="background:#2563eb;color:white;border:0;padding:8px 13px;border-radius:6px;cursor:pointer;">
+                          Edit
+                        </button>`
+                      : `<span style="color:#94a3b8;">Terkunci</span>`
+                  }
+                </td>
               </tr>
             `).join("")}
           </tbody>
@@ -959,13 +962,67 @@ async function loadMyProjects() {
       </div>
     `;
 
+    // AKSI TOMBOL EDIT PROYEK
+    projectList.querySelectorAll(".edit-project-button").forEach(button => {
+      button.addEventListener("click", async function() {
+
+        const projectId = this.dataset.id;
+
+        const selectedProject = projects.find(
+          project => project.id === projectId
+        );
+
+        if (!selectedProject) {
+          alert("Data proyek tidak ditemukan.");
+          return;
+        }
+
+        // Pastikan pilihan klien dan area sudah dimuat
+        await loadProjectClients();
+
+        // Aktifkan mode edit
+        editingProjectId = selectedProject.id;
+
+        // Isi kembali formulir
+        document.getElementById("project-name").value =
+          selectedProject.project_name || "";
+
+        clientSelect.value =
+          selectedProject.client_id + "|" + (selectedProject.area_id || "");
+
+        document.getElementById("contract-reference").value =
+          selectedProject.contract_reference || "";
+
+        contractInput.value =
+          Number(selectedProject.contract_value || 0).toLocaleString("id-ID");
+
+        document.getElementById("start-date").value =
+          selectedProject.start_date || "";
+
+        document.getElementById("end-date").value =
+          selectedProject.end_date || "";
+
+        // Ubah tombol simpan
+        saveButton.textContent = "Simpan Perubahan";
+
+        projectMessage.style.color = "#2563eb";
+        projectMessage.textContent =
+          "Mode edit aktif. Silakan periksa dan ubah data proyek.";
+
+        // Arahkan layar ke formulir
+        projectForm.scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      });
+    });
+
   } catch (error) {
     projectList.innerHTML =
       '<p style="color:#dc2626;">Gagal memuat proyek: ' +
       safeText(error.message) + '</p>';
   }
 }
-
 loadMyProjects();
   // FORMAT RUPIAH OTOMATIS
   contractInput.addEventListener("input", function() {
@@ -979,76 +1036,115 @@ loadMyProjects();
   });
 
   // SIMPAN PENGAJUAN PROYEK
-  projectForm.addEventListener("submit", async function(e) {
-    e.preventDefault();
 
-    const projectName =
-      document.getElementById("project-name").value.trim();
+projectForm.addEventListener("submit", async function(e) {
+  e.preventDefault();
 
-    const selectedClientArea = clientSelect.value;
+  const projectName =
+    document.getElementById("project-name").value.trim();
 
-const [clientId, selectedAreaId] = selectedClientArea
-  ? selectedClientArea.split("|")
-  : ["", ""];
+  const selectedClientArea = clientSelect.value;
 
-const areaId = selectedAreaId || null;
-const clientName =
-  clientSelect.options[clientSelect.selectedIndex]?.text || "";
+  const [clientId, selectedAreaId] = selectedClientArea
+    ? selectedClientArea.split("|")
+    : ["", ""];
 
-if (!clientId) {
-  projectMessage.style.color = "#dc2626";
-  projectMessage.textContent =
-    "Pilih klien / pemilik proyek dari Master Klien.";
-  return;
-}
-    const contractReference =
-      document.getElementById("contract-reference").value.trim();
+  const areaId = selectedAreaId || null;
 
-    const contractValue =
-      Number(contractInput.value.replace(/\D/g, ""));
+  const clientName =
+    clientSelect.options[clientSelect.selectedIndex]?.text || "";
 
-    const startDate =
-      document.getElementById("start-date").value;
+  const contractReference =
+    document.getElementById("contract-reference").value.trim();
 
-    const endDate =
-      document.getElementById("end-date").value;
+  const contractValue =
+    Number(contractInput.value.replace(/\D/g, ""));
 
-    if (!Number.isSafeInteger(contractValue) || contractValue <= 0) {
-      projectMessage.style.color = "#dc2626";
-      projectMessage.textContent = "Masukkan nilai kontrak yang valid.";
-      return;
+  const startDate =
+    document.getElementById("start-date").value;
+
+  const endDate =
+    document.getElementById("end-date").value;
+
+  if (!projectName) {
+    projectMessage.style.color = "#dc2626";
+    projectMessage.textContent = "Nama proyek wajib diisi.";
+    return;
+  }
+
+  if (!clientId) {
+    projectMessage.style.color = "#dc2626";
+    projectMessage.textContent =
+      "Pilih klien / pemilik proyek dari Master Klien.";
+    return;
+  }
+
+  if (!Number.isSafeInteger(contractValue) || contractValue <= 0) {
+    projectMessage.style.color = "#dc2626";
+    projectMessage.textContent = "Masukkan nilai kontrak yang valid.";
+    return;
+  }
+
+  if (!startDate || !endDate || new Date(endDate) < new Date(startDate)) {
+    projectMessage.style.color = "#dc2626";
+    projectMessage.textContent =
+      "Periksa kembali tanggal mulai dan tanggal penyelesaian.";
+    return;
+  }
+
+  projectMessage.style.color = "#64748b";
+  projectMessage.textContent = "Sedang menyimpan data proyek...";
+
+  saveButton.disabled = true;
+  saveButton.textContent = "Menyimpan...";
+
+  try {
+    const { data: userData, error: userError } =
+      await supabaseClient.auth.getUser();
+
+    if (userError || !userData.user) {
+      throw new Error("Sesi login tidak ditemukan. Silakan login kembali.");
     }
 
-    if (new Date(endDate) < new Date(startDate)) {
-      projectMessage.style.color = "#dc2626";
-      projectMessage.textContent =
-        "Tanggal penyelesaian tidak boleh lebih awal dari tanggal mulai.";
-      return;
-    }
+    if (editingProjectId) {
 
-    projectMessage.style.color = "#64748b";
-    projectMessage.textContent = "Sedang menyimpan pengajuan proyek...";
+      // MODE EDIT: PERBARUI PROYEK LAMA
+      const { data: updateResult, error } =
+        await supabaseClient.rpc("update_project_draft", {
+          p_project_id: editingProjectId,
+          p_project_name: projectName,
+          p_client_id: clientId,
+          p_area_id: areaId,
+          p_client_name: clientName,
+          p_contract_reference: contractReference || null,
+          p_contract_value: contractValue,
+          p_start_date: startDate,
+          p_end_date: endDate
+        });
 
-    saveButton.disabled = true;
-    saveButton.textContent = "Menyimpan...";
+      if (error) throw error;
 
-    try {
-
-      const { data: userData, error: userError } =
-        await supabaseClient.auth.getUser();
-
-      if (userError || !userData.user) {
-        throw new Error("Sesi login tidak ditemukan. Silakan login kembali.");
+      if (updateResult?.success === false) {
+        throw new Error(updateResult.message || "Perubahan proyek gagal disimpan.");
       }
-const projectCode = "GMP-" + Date.now();
+
+      projectMessage.style.color = "#15803d";
+      projectMessage.textContent =
+        "Perubahan proyek berhasil disimpan.";
+
+    } else {
+
+      // MODE BARU: SIMPAN PROYEK SEBAGAI DRAFT
+      const projectCode = "GMP-" + Date.now();
+
       const { error } = await supabaseClient
         .from("projects")
         .insert({
-  project_code: projectCode,
-  project_name: projectName,
-  client_id: clientId,
-  area_id: areaId,
-  client_name: clientName,
+          project_code: projectCode,
+          project_name: projectName,
+          client_id: clientId,
+          area_id: areaId,
+          client_name: clientName,
           contract_reference: contractReference || null,
           contract_value: contractValue,
           start_date: startDate,
@@ -1064,22 +1160,29 @@ const projectCode = "GMP-" + Date.now();
       projectMessage.style.color = "#15803d";
       projectMessage.textContent =
         "Pengajuan proyek berhasil disimpan sebagai Draft.";
-
-      projectForm.reset();
-
-    } catch (error) {
-
-      projectMessage.style.color = "#dc2626";
-      projectMessage.textContent =
-        "Gagal menyimpan proyek: " + error.message;
-
-    } finally {
-
-      saveButton.disabled = false;
-      saveButton.textContent = "Simpan Draft Proyek";
-
     }
-  });
+
+    // KEMBALI KE MODE TAMBAH PROYEK
+    editingProjectId = null;
+    projectForm.reset();
+
+    // MUAT ULANG DAFTAR PROYEK
+    await loadMyProjects();
+
+  } catch (error) {
+
+    projectMessage.style.color = "#dc2626";
+    projectMessage.textContent =
+      "Gagal menyimpan proyek: " + error.message;
+
+  } finally {
+
+    saveButton.disabled = false;
+    saveButton.textContent = editingProjectId
+      ? "Simpan Perubahan"
+      : "Simpan Draft Proyek";
+  }
+});
 
 
 
