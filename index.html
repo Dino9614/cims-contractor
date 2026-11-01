@@ -1370,6 +1370,91 @@ if (header) {
     }
   });
 }
+// =====================================
+// PERSADA APPS - SESSION RECOVERY
+// =====================================
+
+async function restorePersadaSession() {
+  try {
+    const { data, error } =
+      await supabaseClient.auth.getSession();
+
+    if (error) throw error;
+
+    const session = data.session;
+
+    // Belum ada session, tampilkan halaman login
+    if (!session) return;
+
+    // Ambil profil pengguna
+    const { data: profile, error: profileError } =
+      await supabaseClient
+        .from('profiles')
+        .select('full_name, role, is_active')
+        .eq('id', session.user.id)
+        .single();
+
+    if (profileError) throw profileError;
+
+    // Periksa status akun
+    if (!profile || !profile.is_active) {
+      await supabaseClient.auth.signOut();
+      return;
+    }
+
+    // Tampilkan aplikasi
+    document.getElementById('login-screen').style.display = 'none';
+    document.body.classList.add('authenticated');
+
+    // Tampilkan identitas pengguna
+    const header = document.querySelector('header');
+
+    if (header && !document.getElementById('login-welcome')) {
+      const welcome = document.createElement('p');
+      welcome.id = 'login-welcome';
+      welcome.textContent =
+        'Login: ' + profile.full_name + ' (' + profile.role + ')';
+
+      header.appendChild(welcome);
+    }
+
+    // Buat tombol logout jika belum tersedia
+    if (header && !document.getElementById('logout-button')) {
+      const logoutButton = document.createElement('button');
+      logoutButton.id = 'logout-button';
+      logoutButton.textContent = 'Logout';
+
+      logoutButton.addEventListener('click', async function () {
+        if (!confirm('Apakah Anda yakin ingin logout?')) return;
+
+        logoutButton.disabled = true;
+        logoutButton.textContent = 'Keluar...';
+
+        const { error } = await supabaseClient.auth.signOut();
+
+        if (error) {
+          alert('Gagal logout: ' + error.message);
+          logoutButton.disabled = false;
+          logoutButton.textContent = 'Logout';
+          return;
+        }
+
+        window.location.reload();
+      });
+
+      header.appendChild(logoutButton);
+    }
+
+    console.log('PERSADA APPS: Session berhasil dipulihkan.');
+
+  } catch (error) {
+    console.error('Session recovery error:', error);
+  }
+}
+
+// Jalankan saat aplikasi dibuka
+restorePersadaSession();
+
 </script>
 </body>
 </html>
