@@ -2027,6 +2027,65 @@ content.innerHTML = `
     }
   });
 
+  // SIMPAN PEMILIK PROYEK BARU
+  const newClientForm = document.getElementById("new-client-form");
+  const newClientButton = document.getElementById("new-client-save");
+  const newClientMessage = document.getElementById("new-client-message");
+
+  newClientForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    newClientButton.disabled = true;
+    newClientButton.textContent = "Menyimpan...";
+    newClientMessage.textContent = "";
+
+    try {
+      const { data: userData, error: userError } =
+        await supabaseClient.auth.getUser();
+
+      if (userError) throw userError;
+
+      if (!userData.user) {
+        throw new Error("Sesi login tidak ditemukan. Silakan login kembali.");
+      }
+
+      const { data: savedClient, error: saveError } =
+        await supabaseClient
+          .from("clients")
+          .insert({
+            company_name: document.getElementById("new-client-name").value.trim(),
+            address: document.getElementById("new-client-address").value.trim() || null,
+            contact_person: document.getElementById("new-client-contact").value.trim() || null,
+            phone: document.getElementById("new-client-phone").value.trim() || null,
+            email: document.getElementById("new-client-email").value.trim() || null,
+            npwp: document.getElementById("new-client-npwp").value.trim() || null,
+            created_by: userData.user.id,
+            is_active: true
+          })
+          .select("client_code, company_name")
+          .single();
+
+      if (saveError) throw saveError;
+
+      newClientMessage.textContent =
+        "Berhasil! " + savedClient.company_name +
+        " terdaftar dengan kode " + savedClient.client_code;
+
+      newClientMessage.style.color = "green";
+
+      newClientForm.reset();
+
+      await loadOwnerData();
+
+    } catch (error) {
+      newClientMessage.textContent = "Gagal menyimpan: " + error.message;
+      newClientMessage.style.color = "red";
+    } finally {
+      newClientButton.disabled = false;
+      newClientButton.textContent = "+ Simpan Pemilik Proyek";
+    }
+  });
+
   try {
     await loadOwnerData();
   } catch (error) {
