@@ -542,111 +542,314 @@ if (page === "Dashboard") {
   }
 
 
+
 } else if (page === "Pengajuan Proyek") {
+
   content.innerHTML = `
-    <h2>Pengajuan Proyek</h2>
-    <p>Formulir pengajuan proyek baru.</p>
+    <div style="margin-bottom:25px;">
+      <div style="font-size:12px;color:#64748b;font-weight:600;letter-spacing:1px;">
+        PROJECT MANAGEMENT / REGISTRATION
+      </div>
+      <h2 style="margin:8px 0;color:#12345a;font-size:25px;">
+        Pengajuan Proyek Baru
+      </h2>
+      <p style="margin:0;color:#64748b;font-size:14px;">
+        Registrasi proyek dan pencatatan informasi kontrak untuk proses persetujuan manajemen.
+      </p>
+    </div>
 
-    <div class="panel">
+    <div class="panel" style="
+      max-width:1000px;
+      margin-top:0;
+      padding:28px;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      box-shadow:0 3px 12px #00000008;
+    ">
+
       <form id="project-form">
-        <p>Nama Proyek</p>
-        <input
-          type="text"
-          id="project-name"
-          placeholder="Masukkan nama proyek"
-          required
-        >
 
-        <p>Nama Klien</p>
-        <input
-          type="text"
-          id="client-name"
-          placeholder="Masukkan nama klien"
-          required
-        >
+        <div style="border-bottom:1px solid #e2e8f0;padding-bottom:14px;margin-bottom:22px;">
+          <h3 style="margin:0;color:#12345a;font-size:17px;">
+            01. Identitas Proyek
+          </h3>
+          <p style="margin:6px 0 0;color:#64748b;font-size:13px;">
+            Informasi dasar proyek dan pemilik pekerjaan.
+          </p>
+        </div>
 
-        <p>Nilai Kontrak (Rp)</p>
-        <input
-          type="number"
-          id="contract-value"
-          min="0"
-          placeholder="Contoh: 150000000"
-          required
-        >
+        <div style="
+          display:grid;
+          grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+          gap:22px;
+        ">
 
-        <p>Tanggal Mulai</p>
-        <input type="date" id="start-date" required>
+          <div>
+            <label for="project-name" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px;">
+              Nama Proyek <span style="color:#dc2626;">*</span>
+            </label>
+            <input
+              type="text"
+              id="project-name"
+              placeholder="Masukkan nama proyek"
+              required
+              style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px;"
+            >
+          </div>
 
-        <p>Tanggal Selesai</p>
-        <input type="date" id="end-date" required>
+          <div>
+            <label for="client-name" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px;">
+              Klien / Pemilik Proyek <span style="color:#dc2626;">*</span>
+            </label>
+            <input
+              type="text"
+              id="client-name"
+              placeholder="Masukkan nama perusahaan klien"
+              required
+              style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px;"
+            >
+          </div>
 
-        <br><br>
-        <button type="submit">Simpan Draft Proyek</button>
+        </div>
+
+        <div style="border-bottom:1px solid #e2e8f0;padding-bottom:14px;margin:30px 0 22px;">
+          <h3 style="margin:0;color:#12345a;font-size:17px;">
+            02. Informasi Kontrak
+          </h3>
+          <p style="margin:6px 0 0;color:#64748b;font-size:13px;">
+            Pencatatan nomor dokumen dan nilai pekerjaan.
+          </p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;">
+
+          <div>
+            <label for="contract-reference" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px;">
+              No. Kontrak / SPK / PO
+            </label>
+            <input
+              type="text"
+              id="contract-reference"
+              placeholder="Contoh: 001/SPK/ABC/XI/2026"
+              style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px;"
+            >
+            <small style="display:block;color:#64748b;margin-top:7px;">
+              Isi sesuai nomor dokumen dari pemilik proyek.
+            </small>
+          </div>
+
+          <div>
+            <label for="contract-value" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px;">
+              Nilai Kontrak <span style="color:#dc2626;">*</span>
+            </label>
+
+            <div style="position:relative;">
+              <span style="
+                position:absolute;
+                left:13px;
+                top:50%;
+                transform:translateY(-50%);
+                color:#475569;
+                font-weight:700;
+              ">Rp</span>
+
+              <input
+                type="text"
+                id="contract-value"
+                inputmode="numeric"
+                placeholder="0"
+                required
+                style="
+                  width:100%;
+                  padding:12px 12px 12px 42px;
+                  border:1px solid #cbd5e1;
+                  border-radius:7px;
+                  font-size:16px;
+                  font-weight:600;
+                "
+              >
+            </div>
+
+            <small style="display:block;color:#64748b;margin-top:7px;">
+              Pemisah ribuan menggunakan titik secara otomatis.
+            </small>
+          </div>
+
+        </div>
+
+        <div style="border-bottom:1px solid #e2e8f0;padding-bottom:14px;margin:30px 0 22px;">
+          <h3 style="margin:0;color:#12345a;font-size:17px;">
+            03. Jadwal Pelaksanaan
+          </h3>
+          <p style="margin:6px 0 0;color:#64748b;font-size:13px;">
+            Tentukan rencana waktu pelaksanaan pekerjaan.
+          </p>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;">
+
+          <div>
+            <label for="start-date" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px;">
+              Rencana Tanggal Mulai <span style="color:#dc2626;">*</span>
+            </label>
+            <input
+              type="date"
+              id="start-date"
+              required
+              style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px;"
+            >
+          </div>
+
+          <div>
+            <label for="end-date" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px;">
+              Target Penyelesaian <span style="color:#dc2626;">*</span>
+            </label>
+            <input
+              type="date"
+              id="end-date"
+              required
+              style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px;"
+            >
+          </div>
+
+        </div>
+
+        <div style="
+          display:flex;
+          justify-content:flex-end;
+          margin-top:32px;
+          padding-top:22px;
+          border-top:1px solid #e2e8f0;
+        ">
+          <button
+            type="submit"
+            id="save-project-button"
+            style="
+              background:#12345a;
+              color:white;
+              border:0;
+              padding:13px 26px;
+              border-radius:7px;
+              font-weight:600;
+              font-size:14px;
+              cursor:pointer;
+            "
+          >
+            Simpan Draft Proyek
+          </button>
+        </div>
+
       </form>
 
-      <p id="project-message"></p>
+      <p id="project-message" style="margin:18px 0 0;font-size:14px;"></p>
+
     </div>
   `;
 
   const projectForm = document.getElementById("project-form");
   const projectMessage = document.getElementById("project-message");
+  const contractInput = document.getElementById("contract-value");
+  const saveButton = document.getElementById("save-project-button");
 
+  // FORMAT RUPIAH OTOMATIS
+  contractInput.addEventListener("input", function() {
+    const angka = this.value.replace(/\D/g, "");
+
+    this.value = angka === ""
+      ? ""
+      : new Intl.NumberFormat("id-ID", {
+          maximumFractionDigits: 0
+        }).format(Number(angka));
+  });
+
+  // SIMPAN PENGAJUAN PROYEK
   projectForm.addEventListener("submit", async function(e) {
     e.preventDefault();
 
     const projectName =
       document.getElementById("project-name").value.trim();
+
     const clientName =
       document.getElementById("client-name").value.trim();
+
+    const contractReference =
+      document.getElementById("contract-reference").value.trim();
+
     const contractValue =
-      Number(document.getElementById("contract-value").value);
+      Number(contractInput.value.replace(/\D/g, ""));
+
     const startDate =
       document.getElementById("start-date").value;
+
     const endDate =
       document.getElementById("end-date").value;
 
+    if (!Number.isSafeInteger(contractValue) || contractValue <= 0) {
+      projectMessage.style.color = "#dc2626";
+      projectMessage.textContent = "Masukkan nilai kontrak yang valid.";
+      return;
+    }
+
     if (new Date(endDate) < new Date(startDate)) {
+      projectMessage.style.color = "#dc2626";
       projectMessage.textContent =
-        "Tanggal selesai tidak boleh lebih awal dari tanggal mulai.";
+        "Tanggal penyelesaian tidak boleh lebih awal dari tanggal mulai.";
       return;
     }
 
-    projectMessage.textContent = "Menyimpan proyek...";
+    projectMessage.style.color = "#64748b";
+    projectMessage.textContent = "Sedang menyimpan pengajuan proyek...";
 
-    const { data: userData, error: userError } =
-      await supabaseClient.auth.getUser();
+    saveButton.disabled = true;
+    saveButton.textContent = "Menyimpan...";
 
-    if (userError || !userData.user) {
+    try {
+
+      const { data: userData, error: userError } =
+        await supabaseClient.auth.getUser();
+
+      if (userError || !userData.user) {
+        throw new Error("Sesi login tidak ditemukan. Silakan login kembali.");
+      }
+
+      const { error } = await supabaseClient
+        .from("projects")
+        .insert({
+          project_name: projectName,
+          client_name: clientName,
+          contract_reference: contractReference || null,
+          contract_value: contractValue,
+          start_date: startDate,
+          end_date: endDate,
+          status: "Belum Dimulai",
+          progress: 0,
+          approval_status: "draft",
+          created_by: userData.user.id
+        });
+
+      if (error) throw error;
+
+      projectMessage.style.color = "#15803d";
       projectMessage.textContent =
-        "Sesi login tidak ditemukan. Silakan login kembali.";
-      return;
-    }
+        "Pengajuan proyek berhasil disimpan sebagai Draft.";
 
-    const { error } = await supabaseClient
-      .from("projects")
-      .insert({
-        project_name: projectName,
-        client_name: clientName,
-        contract_value: contractValue,
-        start_date: startDate,
-        end_date: endDate,
-        status: "Belum Dimulai",
-        progress: 0,
-        approval_status: "draft",
-        created_by: userData.user.id
-      });
+      projectForm.reset();
 
-    if (error) {
+    } catch (error) {
+
+      projectMessage.style.color = "#dc2626";
       projectMessage.textContent =
         "Gagal menyimpan proyek: " + error.message;
-      return;
+
+    } finally {
+
+      saveButton.disabled = false;
+      saveButton.textContent = "Simpan Draft Proyek";
+
     }
-
-    projectMessage.textContent =
-      "Proyek berhasil disimpan sebagai Draft.";
-
-       projectForm.reset();
   });
+
+}
 
 } else if (page === "Pengguna") {
   content.innerHTML = `
