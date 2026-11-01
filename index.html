@@ -340,7 +340,6 @@ body.session-checking #session-loading {
   </form>
 </div>
 
-</div>
 
 <header style="background:#12345a;color:white;padding:15px 20px">
   <div style="display:flex;align-items:center;gap:18px">
@@ -601,13 +600,13 @@ if (page === "Dashboard") {
             <label for="client-name" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px;">
               Klien / Pemilik Proyek <span style="color:#dc2626;">*</span>
             </label>
-            <input
-              type="text"
-              id="client-name"
-              placeholder="Masukkan nama perusahaan klien"
-              required
-              style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px;"
-            >
+            <select
+  id="client-name"
+  required
+  style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px;"
+>
+  <option value="">Memuat data Master Klien...</option>
+</select>
           </div>
 
         </div>
@@ -750,7 +749,39 @@ if (page === "Dashboard") {
   const projectMessage = document.getElementById("project-message");
   const contractInput = document.getElementById("contract-value");
   const saveButton = document.getElementById("save-project-button");
+  // MEMUAT DATA MASTER KLIEN
+  const clientSelect = document.getElementById("client-name");
 
+  async function loadProjectClients() {
+    clientSelect.innerHTML = '<option value="">Memuat data Master Klien...</option>';
+
+    const { data: clients, error } = await supabaseClient
+      .from("clients")
+      .select("id, company_name")
+      .eq("is_active", true)
+      .order("company_name", { ascending: true });
+
+    if (error) {
+      clientSelect.innerHTML = '<option value="">Gagal memuat data klien</option>';
+      projectMessage.style.color = "#dc2626";
+      projectMessage.textContent = "Gagal mengambil Master Klien: " + error.message;
+      return;
+    }
+
+    clientSelect.innerHTML = "";
+    clientSelect.add(new Option("Pilih klien / pemilik proyek", ""));
+
+    if (!clients || clients.length === 0) {
+      clientSelect.innerHTML = '<option value="">Belum ada klien aktif di Master Klien</option>';
+      return;
+    }
+
+    clients.forEach(client => {
+      clientSelect.add(new Option(client.company_name, client.id));
+    });
+  }
+
+  loadProjectClients();
   // FORMAT RUPIAH OTOMATIS
   contractInput.addEventListener("input", function() {
     const angka = this.value.replace(/\D/g, "");
@@ -769,9 +800,18 @@ if (page === "Dashboard") {
     const projectName =
       document.getElementById("project-name").value.trim();
 
-    const clientName =
-      document.getElementById("client-name").value.trim();
+    const clientId = clientSelect.value;
 
+
+const clientName =
+  clientSelect.options[clientSelect.selectedIndex]?.text || "";
+
+if (!clientId) {
+  projectMessage.style.color = "#dc2626";
+  projectMessage.textContent =
+    "Pilih klien / pemilik proyek dari Master Klien.";
+  return;
+}
     const contractReference =
       document.getElementById("contract-reference").value.trim();
 
@@ -816,6 +856,7 @@ if (page === "Dashboard") {
         .from("projects")
         .insert({
           project_name: projectName,
+          client_id: clientId,
           client_name: clientName,
           contract_reference: contractReference || null,
           contract_value: contractValue,
@@ -1557,7 +1598,7 @@ if (loginForm) {
 
       document.getElementById('login-screen').style.display = 'none';
       document.body.classList.add('authenticated');
-
+      showPage("Dashboard");
       
 const header = document.querySelector('header');
 
@@ -1645,6 +1686,7 @@ if (!session) {
    document.body.classList.add('authenticated');
    document.body.classList.remove('session-checking');
    document.getElementById('session-loading').style.display = 'none';
+    showPage("Dashboard");
     // Tampilkan identitas pengguna
     const header = document.querySelector('header');
 
