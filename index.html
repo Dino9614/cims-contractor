@@ -931,118 +931,294 @@ const projectCode = "GMP-" + Date.now();
   });
 
 
+
 } else if (page === "Pengguna") {
   content.innerHTML = `
-    <h2>Manajemen Pengguna</h2>
+    <style>
+      .user-page {
+        display: grid;
+        gap: 22px;
+      }
 
-    <div class="panel">
-      <h3>Tambah Pengguna Baru</h3>
+      .user-card {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 22px;
+        box-shadow: 0 3px 12px #0f172a08;
+      }
 
-      <form id="add-user-form">
-        <p>Nama Lengkap</p>
-        <input id="new-user-name" type="text"
-          placeholder="Nama lengkap" required>
+      .user-card h3 {
+        color: #123b63;
+        margin-top: 0;
+        margin-bottom: 18px;
+      }
 
-        <p>Email</p>
-        <input id="new-user-email" type="email"
-          placeholder="Email pengguna" required>
+      .user-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
 
-        <p>Password</p>
-        <input id="new-user-password" type="password"
-          placeholder="Minimal 8 karakter" minlength="8" required>
+      .user-field label {
+        display: block;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 7px;
+      }
 
-       
-<select id="userRole" required>
-  <option value="director">Direktur</option>
-  <option value="project_manager">Project Manager</option>
-  <option value="estimator">Estimator</option>
-  <option value="purchasing">Purchasing</option>
-  <option value="warehouse">Warehouse</option>
-  <option value="finance">Finance</option>
-  <option value="accounting">Accounting</option>
-  <option value="viewer">Viewer</option>
-</select>
+      .user-field input,
+      .user-field select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 11px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 7px;
+        background: white;
+        font-size: 14px;
+      }
 
+      .user-field input:focus,
+      .user-field select:focus {
+        outline: 2px solid #bfdbfe;
+        border-color: #2563eb;
+      }
 
-        <br><br>
-        <button type="submit" id="save-user-button">
-          + Simpan Pengguna
-        </button>
+      .user-help {
+        color: #64748b;
+        font-size: 12px;
+        margin-top: 6px;
+      }
 
-        <p id="add-user-message"></p>
-      </form>
-    </div>
+      .user-primary-button {
+        background: #123b63;
+        color: white;
+        border: 0;
+        border-radius: 7px;
+        padding: 11px 20px;
+        font-weight: 600;
+        cursor: pointer;
+      }
 
-    <div class="panel">
-      <h3>Daftar Pengguna</h3>
-      <p id="user-loading">Memuat data pengguna...</p>
-      <div id="user-table"></div>
+      .user-primary-button:disabled {
+        opacity: .6;
+        cursor: not-allowed;
+      }
+
+      .user-table-wrap {
+        overflow-x: auto;
+        width: 100%;
+      }
+
+      .user-table {
+        width: 100%;
+        min-width: 850px;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .user-table th {
+        background: #f1f5f9;
+        color: #334155;
+        text-align: left;
+        padding: 13px 12px;
+        white-space: nowrap;
+      }
+
+      .user-table td {
+        padding: 13px 12px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .user-table tbody tr:nth-child(even) {
+        background: #f8fafc;
+      }
+
+      .user-role-badge {
+        display: inline-block;
+        background: #e0f2fe;
+        color: #075985;
+        padding: 5px 9px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+
+      .user-status-active {
+        color: #15803d;
+        background: #dcfce7;
+        padding: 5px 9px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .user-status-inactive {
+        color: #b91c1c;
+        background: #fee2e2;
+        padding: 5px 9px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .user-action-button {
+        border: 1px solid #cbd5e1;
+        background: white;
+        color: #334155;
+        border-radius: 6px;
+        padding: 6px 10px;
+        cursor: pointer;
+        margin: 2px;
+      }
+
+      .user-action-button:hover {
+        background: #f1f5f9;
+      }
+
+      .user-result {
+        display: none;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        color: #166534;
+        border-radius: 8px;
+        padding: 14px;
+        margin-top: 16px;
+      }
+
+      @media (max-width: 650px) {
+        .user-form-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .user-card {
+          padding: 16px;
+        }
+      }
+    </style>
+
+    <div class="user-page">
+
+      <div>
+        <h2>Manajemen Pengguna</h2>
+        <p style="color:#64748b;margin-top:-8px">
+          Pengelolaan akun, identitas, dan hak akses pengguna PERSADA APPS.
+        </p>
+      </div>
+
+      <div class="user-card">
+        <h3>Tambah Pengguna Baru</h3>
+
+        <form id="add-user-form">
+
+          <div class="user-form-grid">
+
+            <div class="user-field">
+              <label for="new-user-name">Nama Lengkap</label>
+              <input
+                id="new-user-name"
+                type="text"
+                placeholder="Contoh: Aldino"
+                required
+              >
+            </div>
+
+            <div class="user-field">
+              <label for="new-user-email">Email</label>
+              <input
+                id="new-user-email"
+                type="email"
+                placeholder="nama@email.com"
+                required
+              >
+            </div>
+
+            <div class="user-field">
+              <label for="new-user-password">Password</label>
+              <input
+                id="new-user-password"
+                type="password"
+                placeholder="Minimal 8 karakter"
+                minlength="8"
+                required
+              >
+              <div class="user-help">
+                Password minimal 8 karakter.
+              </div>
+            </div>
+
+            <div class="user-field">
+              <label for="userRole">Jabatan / Role</label>
+              <select id="userRole" required>
+                <option value="">Pilih jabatan</option>
+                <option value="director">Direktur</option>
+                <option value="project_manager">Project Manager</option>
+                <option value="estimator">Estimator</option>
+                <option value="purchasing">Purchasing</option>
+                <option value="warehouse">Warehouse</option>
+                <option value="finance">Finance</option>
+                <option value="accounting">Accounting</option>
+                <option value="viewer">Viewer</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div style="margin-top:20px">
+            <button
+              type="submit"
+              id="save-user-button"
+              class="user-primary-button"
+            >
+              + Simpan Pengguna
+            </button>
+          </div>
+
+          <p id="add-user-message" role="status"></p>
+
+          <div id="user-result" class="user-result">
+            <strong>Pengguna berhasil dibuat!</strong>
+            <p style="margin-bottom:5px">
+              User ID: <strong id="created-user-id"></strong>
+            </p>
+            <p style="margin:0">
+              Simpan dan berikan User ID ini kepada pengguna untuk login.
+            </p>
+          </div>
+
+        </form>
+      </div>
+
+      <div class="user-card">
+        <h3>Daftar Pengguna</h3>
+
+        <p id="user-loading" style="color:#64748b">
+          Memuat data pengguna...
+        </p>
+
+        <div id="user-table" class="user-table-wrap"></div>
+      </div>
+
     </div>
   `;
 
   const form = document.getElementById("add-user-form");
   const message = document.getElementById("add-user-message");
   const saveButton = document.getElementById("save-user-button");
+  const resultBox = document.getElementById("user-result");
 
-  form.addEventListener("submit", async function(event) {
-    event.preventDefault();
-
-    saveButton.disabled = true;
-    saveButton.textContent = "Menyimpan...";
-    message.textContent = "";
-
-    try {
-      const { data, error } = await supabaseClient.functions.invoke(
-        "create-user",
-        {
-          body: {
-            name: document.getElementById("new-user-name").value.trim(),
-            email: document.getElementById("new-user-email").value.trim(),
-            password: document.getElementById("new-user-password").value,            
-            role: document.getElementById("userRole").value
-
-          }
-        }
-      );
-
-      if (error) throw error;
-      if (!data || !data.success) {
-        throw new Error(data?.error || "Gagal membuat pengguna");
-      }
-
-      message.textContent = "Pengguna berhasil dibuat!";
-      message.style.color = "green";
-      form.reset();
-
-      await loadUsers();
-
-    } catch (error) {
-      message.textContent = "Gagal: " + error.message;
-      message.style.color = "red";
-    } finally {
-      saveButton.disabled = false;
-      saveButton.textContent = "+ Simpan Pengguna";
-    }
-  });
-
-  
-async function loadUsers() {
-  const table = document.getElementById("user-table");
-  const loading = document.getElementById("user-loading");
-
-  loading.textContent = "Memuat data pengguna...";
-
-  const { data, error } = await supabaseClient
-    .from("profiles")
-    .select("id, full_name, role, is_active, created_at")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    loading.textContent = "Gagal memuat: " + error.message;
-    return;
-  }
-
-  loading.textContent = "";
+  const roleLabels = {
+    super_admin: "Super Admin",
+    director: "Direktur",
+    project_manager: "Project Manager",
+    estimator: "Estimator",
+    purchasing: "Purchasing",
+    warehouse: "Warehouse",
+    finance: "Finance",
+    accounting: "Accounting",
+    viewer: "Viewer"
+  };
 
   const safe = (value) => String(value ?? "").replace(
     /[&<>"']/g,
@@ -1055,141 +1231,247 @@ async function loadUsers() {
     })[char]
   );
 
-  if (!data || data.length === 0) {
-    table.textContent = "Belum ada pengguna.";
-    return;
-  }
+  form.addEventListener("submit", async function(event) {
+    event.preventDefault();
 
-  table.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>Nama</th>
-          <th>Role</th>
-          <th>Status</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${data.map(user => `
+    saveButton.disabled = true;
+    saveButton.textContent = "Menyimpan...";
+    message.textContent = "";
+    resultBox.style.display = "none";
+
+    try {
+      const { data, error } =
+        await supabaseClient.functions.invoke(
+          "create-user",
+          {
+            body: {
+              name: document.getElementById("new-user-name").value.trim(),
+              email: document.getElementById("new-user-email").value.trim(),
+              password: document.getElementById("new-user-password").value,
+              role: document.getElementById("userRole").value
+            }
+          }
+        );
+
+      if (error) throw error;
+
+      if (!data || !data.success) {
+        throw new Error(data?.error || "Gagal membuat pengguna");
+      }
+
+      document.getElementById("created-user-id").textContent =
+        data.user.username;
+
+      resultBox.style.display = "block";
+
+      message.textContent = "Pengguna berhasil dibuat.";
+      message.style.color = "#15803d";
+
+      form.reset();
+
+      await loadUsers();
+
+    } catch (error) {
+      message.textContent = "Gagal: " + error.message;
+      message.style.color = "#b91c1c";
+
+    } finally {
+      saveButton.disabled = false;
+      saveButton.textContent = "+ Simpan Pengguna";
+    }
+  });
+
+  async function loadUsers() {
+    const table = document.getElementById("user-table");
+    const loading = document.getElementById("user-loading");
+
+    loading.textContent = "Memuat data pengguna...";
+
+    const { data, error } = await supabaseClient
+      .from("profiles")
+      .select("id, full_name, username, email, role, is_active, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      loading.textContent = "Gagal memuat: " + error.message;
+      return;
+    }
+
+    loading.textContent = "";
+
+    if (!data || data.length === 0) {
+      table.textContent = "Belum ada pengguna.";
+      return;
+    }
+
+    table.innerHTML = `
+      <table class="user-table">
+        <thead>
           <tr>
-            <td>${safe(user.full_name)}</td>
-            <td>${safe(user.role)}</td>
-            <td>${user.is_active ? "Aktif" : "Nonaktif"}</td>
-            <td>
-              ${
-                user.role === "super_admin"
-                ? "Administrator Utama"
-                : `
-                  <button
-                    data-action="edit"
-                    data-id="${safe(user.id)}"
-                    data-name="${safe(user.full_name)}"
-                    data-role="${safe(user.role)}">
-                    Edit
-                  </button>
-
-                  <button
-                    data-action="toggle"
-                    data-id="${safe(user.id)}"
-                    data-active="${user.is_active}">
-                    ${user.is_active ? "Nonaktifkan" : "Aktifkan"}
-                  </button>
-                `
-              }
-            </td>
+            <th>No.</th>
+            <th>Nama Lengkap</th>
+            <th>User ID</th>
+            <th>Email</th>
+            <th>Jabatan</th>
+            <th>Status</th>
+            <th>Aksi</th>
           </tr>
-        `).join("")}
-      </tbody>
-    </table>
-  `;
-}
+        </thead>
 
-const userTable = document.getElementById("user-table");
+        <tbody>
+          ${data.map((user, index) => `
+            <tr>
+              <td>${index + 1}</td>
 
-userTable.addEventListener("click", async function(event) {
-  const button = event.target.closest("button[data-action]");
-  if (!button) return;
+              <td>
+                <strong>${safe(user.full_name)}</strong>
+              </td>
 
-  const id = button.dataset.id;
-  const action = button.dataset.action;
+              <td>
+                ${user.username
+                  ? `<strong>${safe(user.username)}</strong>`
+                  : '<span style="color:#94a3b8">Belum tersedia</span>'}
+              </td>
 
-  if (action === "edit") {
-    const name = prompt("Nama lengkap:", button.dataset.name);
-    if (name === null) return;
+              <td>${safe(user.email || "-")}</td>
 
-    const role = prompt(
-      "Masukkan role:\ndirector, project_manager, estimator, purchasing, warehouse, finance, accounting, viewer",
-      button.dataset.role
-    );
+              <td>
+                <span class="user-role-badge">
+                  ${safe(roleLabels[user.role] || user.role)}
+                </span>
+              </td>
 
-    if (role === null) return;
+              <td>
+                <span class="${user.is_active
+                  ? "user-status-active"
+                  : "user-status-inactive"}">
+                  ${user.is_active ? "Aktif" : "Tidak Aktif"}
+                </span>
+              </td>
 
-    const allowedRoles = [
-      "director",
-      "project_manager",
-      "estimator",
-      "purchasing",
-      "warehouse",
-      "finance",
-      "accounting",
-      "viewer"
-    ];
+              <td>
+                ${
+                  user.role === "super_admin"
+                  ? '<strong>Administrator Utama</strong>'
+                  : `
+                    <button
+                      class="user-action-button"
+                      data-action="edit"
+                      data-id="${safe(user.id)}"
+                      data-name="${safe(user.full_name)}"
+                      data-role="${safe(user.role)}">
+                      Edit
+                    </button>
 
-    if (!name.trim()) {
-      alert("Nama tidak boleh kosong.");
-      return;
-    }
-
-    if (!allowedRoles.includes(role.trim())) {
-      alert("Role tidak valid.");
-      return;
-    }
-
-    const { error } = await supabaseClient
-      .from("profiles")
-      .update({
-        full_name: name.trim(),
-        role: role.trim()
-      })
-      .eq("id", id);
-
-    if (error) {
-      alert("Gagal mengedit: " + error.message);
-      return;
-    }
-
-    alert("Data pengguna berhasil diperbarui.");
-    await loadUsers();
+                    <button
+                      class="user-action-button"
+                      data-action="toggle"
+                      data-id="${safe(user.id)}"
+                      data-active="${user.is_active}">
+                      ${user.is_active ? "Nonaktifkan" : "Aktifkan"}
+                    </button>
+                  `
+                }
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
   }
 
-  if (action === "toggle") {
-    const currentlyActive = button.dataset.active === "true";
-    const newStatus = !currentlyActive;
+  const userTable = document.getElementById("user-table");
 
-    if (!confirm(
-      newStatus
-        ? "Aktifkan kembali pengguna ini?"
-        : "Nonaktifkan pengguna ini?"
-    )) return;
+  userTable.addEventListener("click", async function(event) {
+    const button = event.target.closest("button[data-action]");
 
-    const { error } = await supabaseClient
-      .from("profiles")
-      .update({ is_active: newStatus })
-      .eq("id", id);
+    if (!button) return;
 
-    if (error) {
-      alert("Gagal mengubah status: " + error.message);
-      return;
+    const id = button.dataset.id;
+    const action = button.dataset.action;
+
+    if (action === "edit") {
+      const name = prompt(
+        "Nama lengkap:",
+        button.dataset.name
+      );
+
+      if (name === null) return;
+
+      const role = prompt(
+        "Masukkan role:\ndirector, project_manager, estimator, purchasing, warehouse, finance, accounting, viewer",
+        button.dataset.role
+      );
+
+      if (role === null) return;
+
+      const allowedRoles = [
+        "director",
+        "project_manager",
+        "estimator",
+        "purchasing",
+        "warehouse",
+        "finance",
+        "accounting",
+        "viewer"
+      ];
+
+      if (!name.trim()) {
+        alert("Nama tidak boleh kosong.");
+        return;
+      }
+
+      if (!allowedRoles.includes(role.trim())) {
+        alert("Role tidak valid.");
+        return;
+      }
+
+      const { error } = await supabaseClient
+        .from("profiles")
+        .update({
+          full_name: name.trim(),
+          role: role.trim()
+        })
+        .eq("id", id);
+
+      if (error) {
+        alert("Gagal mengedit: " + error.message);
+        return;
+      }
+
+      alert("Data pengguna berhasil diperbarui.");
+      await loadUsers();
     }
 
-    alert("Status pengguna berhasil diperbarui.");
-    await loadUsers();
-  }
-});
+    if (action === "toggle") {
+      const currentlyActive = button.dataset.active === "true";
+      const newStatus = !currentlyActive;
 
-await loadUsers();
+      if (!confirm(
+        newStatus
+          ? "Aktifkan kembali pengguna ini?"
+          : "Nonaktifkan pengguna ini?"
+      )) return;
+
+      const { error } = await supabaseClient
+        .from("profiles")
+        .update({ is_active: newStatus })
+        .eq("id", id);
+
+      if (error) {
+        alert("Gagal mengubah status: " + error.message);
+        return;
+      }
+
+      alert("Status pengguna berhasil diperbarui.");
+      await loadUsers();
+    }
+  });
+
+  await loadUsers();
+
 } else if (page === "Master Data") {
+
   content.innerHTML = `
     <h2>Master Data</h2>
 
