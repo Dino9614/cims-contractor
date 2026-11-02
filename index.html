@@ -327,12 +327,24 @@ body.session-checking #session-loading {
     <p style="color:#64748b">Silakan masuk ke akun Anda</p>
 
     <div style="text-align:left">
-      <label for="login-email">Email</label>
-      <input id="login-email" type="email" autocomplete="username" required style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 16px;border:1px solid #cbd5e1;border-radius:7px">
+  <label for="login-userid">User ID</label>
+  <input
+    id="login-userid"
+    type="text"
+    autocomplete="username"
+    placeholder="Masukkan User ID"
+    required
+    style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 16px;border:1px solid #cbd5e1;border-radius:7px">
 
-      <label for="login-password">Kata sandi</label>
-      <input id="login-password" type="password" autocomplete="current-password" required style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 16px;border:1px solid #cbd5e1;border-radius:7px">
-    </div>
+  <label for="login-password">Kata sandi</label>
+  <input
+    id="login-password"
+    type="password"
+    autocomplete="current-password"
+    placeholder="Masukkan kata sandi"
+    required
+    style="display:block;width:100%;box-sizing:border-box;padding:12px;margin:8px 0 16px;border:1px solid #cbd5e1;border-radius:7px">
+</div>
 
     <button id="login-button" type="submit" style="width:100%;padding:12px;background:#123b63;color:white;border:0;border-radius:7px;font-weight:bold">Masuk</button>
 
