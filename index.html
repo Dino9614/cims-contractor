@@ -942,19 +942,43 @@ async function loadMyProjects() {
                     </div>
                   ` : ""}
                 </td>
-                <td style="padding:12px;">
-                  ${
-                    ["draft", "revision"].includes(project.approval_status)
-                      ? `<button
-                          type="button"
-                          class="edit-project-button"
-                          data-id="${safeText(project.id)}"
-                          style="background:#2563eb;color:white;border:0;padding:8px 13px;border-radius:6px;cursor:pointer;">
-                          Edit
-                        </button>`
-                      : `<span style="color:#94a3b8;">Terkunci</span>`
-                  }
-                </td>
+                <td style="padding:12px;white-space:nowrap;">
+  ${
+    ["draft", "revision"].includes(project.approval_status)
+      ? `
+        <div style="display:flex;gap:8px;align-items:center;">
+
+          <button
+            type="button"
+            class="edit-project-button"
+            data-id="${safeText(project.id)}"
+            style="background:#2563eb;color:white;border:0;padding:13px 18px;border-radius:11px;cursor:pointer;">
+            Edit
+          </button>
+
+          <button
+            type="button"
+            class="submit-project-button"
+            data-id="${safeText(project.id)}"
+            style="background:#2563eb;color:white;border:0;padding:13px 18px;border-radius:11px;cursor:pointer;font-size:16px;font-weight:600;display:inline-flex;align-items:center;gap:10px;">
+
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 width="18" height="18"
+                 viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round"
+                 stroke-linejoin="round">
+              <path d="m22 2-7 20-4-9-9-4Z"/>
+              <path d="M22 2 11 13"/>
+            </svg>
+            Submit
+          </button>
+
+        </div>
+      `
+      : `<span style="color:#94a3b8;">Terkunci</span>`
+  }
+</td>
               </tr>
             `).join("")}
           </tbody>
@@ -1016,7 +1040,58 @@ async function loadMyProjects() {
         });
       });
     });
+// AKSI TOMBOL SUBMIT PENGAJUAN KE PM
+projectList.querySelectorAll(".submit-project-button").forEach(button => {
+  button.addEventListener("click", async function() {
 
+    const projectId = this.dataset.id;
+
+    const selectedProject = projects.find(
+      project => project.id === projectId
+    );
+
+    if (!selectedProject) {
+      alert("Data proyek tidak ditemukan.");
+      return;
+    }
+
+    const confirmation = confirm(
+      'Kirim pengajuan proyek "' +
+      selectedProject.project_name +
+      '" kepada Project Manager?'
+    );
+
+    if (!confirmation) return;
+
+    this.disabled = true;
+    this.textContent = "Mengirim...";
+
+    try {
+      const { data, error } = await supabaseClient.rpc(
+        "submit_project_to_pm",
+        {
+          p_project_id: projectId
+        }
+      );
+
+      if (error) throw error;
+
+      if (data && data.success === false) {
+        throw new Error(data.message || "Pengajuan gagal dikirim.");
+      }
+
+      alert("Pengajuan proyek berhasil dikirim kepada Project Manager.");
+
+      await loadMyProjects();
+
+    } catch (error) {
+      alert("Gagal mengirim pengajuan: " + error.message);
+      this.disabled = false;
+      this.innerHTML = "&#9992; Submit";
+    }
+
+  });
+});
   } catch (error) {
     projectList.innerHTML =
       '<p style="color:#dc2626;">Gagal memuat proyek: ' +
