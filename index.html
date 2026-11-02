@@ -2150,7 +2150,51 @@ if (action === "edit") {
   }); // Menutup editForm.addEventListener
 
 } // Menutup if action === edit
+// AKSI AKTIFKAN / NONAKTIFKAN PENGGUNA
+if (action === "toggle") {
 
+  const currentActive = button.dataset.active === "true";
+  const newActive = !currentActive;
+
+  const confirmation = confirm(
+    newActive
+      ? "Yakin ingin mengaktifkan pengguna ini?"
+      : "Yakin ingin menonaktifkan pengguna ini?"
+  );
+
+  if (!confirmation) return;
+
+  button.disabled = true;
+  button.textContent = "Memproses...";
+
+  try {
+    const { error } = await supabaseClient
+      .from("profiles")
+      .update({
+        is_active: newActive
+      })
+      .eq("id", id);
+
+    if (error) throw error;
+
+    alert(
+      newActive
+        ? "Pengguna berhasil diaktifkan."
+        : "Pengguna berhasil dinonaktifkan."
+    );
+
+    await loadUsers();
+
+  } catch (error) {
+    alert("Gagal mengubah status pengguna: " + error.message);
+
+    button.disabled = false;
+    button.textContent = currentActive
+      ? "Nonaktifkan"
+      : "Aktifkan";
+  }
+
+}
 }); // Menutup userTable.addEventListener
 
 await loadUsers();
