@@ -1012,24 +1012,50 @@ async function loadMyProjects() {
       throw new Error("Sesi login tidak ditemukan.");
     }
 
-    const { data: projects, error } = await supabaseClient
-      .from("projects")
-      .select(`
-        id,
-        project_code,
-        project_name,
-        client_id,
-        area_id,
-        client_name,
-        contract_reference,
-        contract_value,
-        start_date,
-        end_date,
-        approval_status,
-        revision_note
-      `)
-      .eq("created_by", userData.user.id)
-      .order("created_at", { ascending: false });
+  // AMBIL ROLE PENGGUNA
+const { data: profile, error: profileError } =
+  await supabaseClient
+    .from("profiles")
+    .select("role")
+    .eq("id", userData.user.id)
+    .single();
+
+if (profileError) throw profileError;
+
+// QUERY DAFTAR PROYEK
+let projectQuery = supabaseClient
+  .from("projects")
+  .select(`
+    id,
+    project_code,
+    project_name,
+    client_id,
+    area_id,
+    client_name,
+    contract_reference,
+    contract_value,
+    start_date,
+    end_date,
+    approval_status,
+    revision_note,
+    created_by,
+    created_at
+  `);
+
+// SUPER ADMIN MELIHAT SEMUA PROYEK
+// ROLE LAIN HANYA MELIHAT PROYEK MILIK SENDIRI
+if (profile.role !== "super_admin") {
+  projectQuery = projectQuery.eq(
+    "created_by",
+    userData.user.id
+  );
+}
+
+const { data: projects, error } =
+  await projectQuery.order(
+    "created_at",
+    { ascending: false }
+  );
 
     if (error) throw error;
 
