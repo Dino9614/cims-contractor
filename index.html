@@ -2902,8 +2902,9 @@ content.innerHTML = `
               <th>Pemilik Proyek</th>
               <th>Nilai Kontrak</th>
               <th>Status Approval</th>
-              <th>Catatan Keputusan</th>
-              <th>Aksi</th>
+              <th>Catatan</th>
+<th>Dokumen Kontrak</th>
+<th>Aksi</th>
             </tr>
           </thead>
           <tbody id="approval-project-list"></tbody>
@@ -2974,7 +2975,49 @@ content.innerHTML = `
       .order("created_at", { ascending: false });
 
     if (error) throw error;
+// AMBIL DOKUMEN KONTRAK UNTUK PM DAN DIREKTUR
+const projectIds = projects.map(p => p.id);
 
+const { data: approvalDocuments, error: documentError } =
+  await supabaseClient
+    .from("project_documents")
+    .select(`
+      id,
+      project_id,
+      document_type,
+      file_path,
+      file_name
+    `)
+    .in("project_id", projectIds)
+    .eq("is_current", true);
+
+if (documentError) throw documentError;
+
+// SIAPKAN TAUTAN UNDUH
+const approvalDocumentsByProject = {};
+
+for (const doc of (approvalDocuments || [])) {
+  const { data: signedData, error: signedError } =
+    await supabaseClient
+      .storage
+      .from("dokumen-proyek")
+      .createSignedUrl(doc.file_path, 300);
+
+  if (signedError) {
+    console.error("Gagal membuat tautan dokumen:", signedError);
+    continue;
+  }
+
+  if (!approvalDocumentsByProject[doc.project_id]) {
+    approvalDocumentsByProject[doc.project_id] = [];
+  }
+
+  approvalDocumentsByProject[doc.project_id].push({
+    type: doc.document_type,
+    name: doc.file_name,
+    url: signedData.signedUrl
+  });
+}
     document.getElementById("approval-pm-count").textContent =
       projects.filter(p => p.approval_status === "pending_pm").length;
 
@@ -3046,7 +3089,26 @@ content.innerHTML = `
             <td>${rupiah(p.contract_value)}</td>
             <td>${statusLabels[p.approval_status] || safe(p.approval_status)}</td>
             <td>${safe(p.revision_note || "-")}</td>
-            <td>${actionButtons}</td>
+
+<td>
+  ${
+    (approvalDocumentsByProject[p.id] || []).length > 0
+      ? approvalDocumentsByProject[p.id].map(doc => `
+          <div style="margin-bottom:7px;">
+            <a
+              href="${safe(doc.url)}"
+              target="_blank"
+              rel="noopener noreferrer"
+              style="color:#2563eb;font-weight:600;text-decoration:none;">
+              ${safe(doc.type)} - Unduh PDF
+            </a>
+          </div>
+        `).join("")
+      : '<span style="color:#dc2626;">Belum ada dokumen</span>'
+  }
+</td>
+
+<td>${actionButtons}</td>
           </tr>
         `;
       }).join("");
