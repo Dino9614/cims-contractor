@@ -677,9 +677,56 @@ margin-top:0;
 
         </div>
 
+<div style="border-bottom:1px solid #e2e8f0;padding-bottom:14px;margin:30px 0 22px;">
+  <h3 style="margin:0;color:#12345a;font-size:17px;">
+    03. Dokumen Kontrak
+  </h3>
+  <p style="margin:6px 0 0;color:#64748b;font-size:13px;">
+    Unggah minimal salah satu dokumen SPK atau PO dalam format PDF.
+  </p>
+</div>
+
+<div style="
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:22px;
+">
+
+  <div>
+    <label for="document-spk" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px;">
+      Dokumen SPK
+    </label>
+    <input
+      type="file"
+      id="document-spk"
+      accept="application/pdf,.pdf"
+      style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px;box-sizing:border-box;"
+    >
+    <small style="display:block;color:#64748b;margin-top:7px;">
+      Format PDF, maksimal 10 MB.
+    </small>
+  </div>
+
+  <div>
+    <label for="document-po" style="display:block;font-weight:600;font-size:14px;margin-bottom:8px;">
+      Dokumen PO
+    </label>
+    <input
+      type="file"
+      id="document-po"
+      accept="application/pdf,.pdf"
+      style="width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:7px;box-sizing:border-box;"
+    >
+    <small style="display:block;color:#64748b;margin-top:7px;">
+      Format PDF, maksimal 10 MB.
+    </small>
+  </div>
+
+</div>
+
         <div style="border-bottom:1px solid #e2e8f0;padding-bottom:14px;margin:30px 0 22px;">
           <h3 style="margin:0;color:#12345a;font-size:17px;">
-            03. Jadwal Pelaksanaan
+            04. Jadwal Pelaksanaan
           </h3>
           <p style="margin:6px 0 0;color:#64748b;font-size:13px;">
             Tentukan rencana waktu pelaksanaan pekerjaan.
@@ -773,6 +820,95 @@ margin-top:25px;
   const projectMessage = document.getElementById("project-message");
   const contractInput = document.getElementById("contract-value");
   const saveButton = document.getElementById("save-project-button");
+  
+const spkInput = document.getElementById("document-spk");
+const poInput = document.getElementById("document-po");
+
+function validateProjectDocument(file) {
+  if (!file) return true;
+
+  if (file.type !== "application/pdf" &&
+      !file.name.toLowerCase().endsWith(".pdf")) {
+    alert("Dokumen harus menggunakan format PDF.");
+    return false;
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    alert("Ukuran dokumen maksimal 10 MB.");
+    return false;
+  }
+
+  return true;
+}
+
+
+async function uploadProjectDocument(projectId, documentType, file) {
+  if (!file) return;
+
+  const { data: userData, error: userError } =
+    await supabaseClient.auth.getUser();
+
+  if (userError || !userData.user) {
+    throw new Error("Sesi login tidak ditemukan.");
+  }
+
+  const randomName = crypto.randomUUID() + ".pdf";
+  const filePath = projectId + "/" + randomName;
+
+  // UPLOAD FILE KE STORAGE
+  const { error: uploadError } = await supabaseClient
+    .storage
+    .from("dokumen-proyek")
+    .upload(filePath, file, {
+      contentType: "application/pdf",
+      upsert: false
+    });
+
+  if (uploadError) throw uploadError;
+
+  try {
+    // CATAT DOKUMEN DAN GANTI VERSI LAMA MELALUI RPC
+    const { data, error } = await supabaseClient.rpc(
+      "register_project_document",
+      {
+        p_project_id: projectId,
+        p_document_type: documentType,
+        p_file_path: filePath,
+        p_file_name: file.name,
+        p_file_size: file.size
+      }
+    );
+
+    if (error) throw error;
+
+    if (data?.success === false) {
+      throw new Error(data.message || "Pencatatan dokumen gagal.");
+    }
+
+  } catch (error) {
+    // HAPUS FILE BARU JIKA PENCATATAN GAGAL
+    await supabaseClient
+      .storage
+      .from("dokumen-proyek")
+      .remove([filePath]);
+
+    throw error;
+  }
+}
+
+
+spkInput.addEventListener("change", function() {
+  if (!validateProjectDocument(this.files[0])) {
+    this.value = "";
+  }
+});
+
+poInput.addEventListener("change", function() {
+  if (!validateProjectDocument(this.files[0])) {
+    this.value = "";
+  }
+});
+
   // MEMUAT DATA MASTER KLIEN
   const clientSelect = document.getElementById("client-name");
 // PENANDA MODE EDIT PROYEK
@@ -902,7 +1038,49 @@ async function loadMyProjects() {
         '<p style="color:#64748b;">Belum ada pengajuan proyek.</p>';
       return;
     }
+// MEMUAT DOKUMEN SPK DAN PO SETIAP PROYEK
+const projectIds = projects.map(project => project.id);
 
+const { data: documents, error: documentError } =
+  await supabaseClient
+    .from("project_documents")
+    .select(`
+      id,
+      project_id,
+      document_type,
+      file_path,
+      file_name
+    `)
+    .in("project_id", projectIds)
+    .eq("is_current", true);
+
+if (documentError) throw documentError;
+
+// MEMBUAT TAUTAN UNDUH DOKUMEN
+const documentsByProject = {};
+
+for (const doc of (documents || [])) {
+  const { data: signedData, error: signedError } =
+    await supabaseClient
+      .storage
+      .from("dokumen-proyek")
+      .createSignedUrl(doc.file_path, 300);
+
+  if (signedError) {
+    console.error("Gagal membuat tautan dokumen:", signedError);
+    continue;
+  }
+
+  if (!documentsByProject[doc.project_id]) {
+    documentsByProject[doc.project_id] = [];
+  }
+
+  documentsByProject[doc.project_id].push({
+    type: doc.document_type,
+    name: doc.file_name,
+    url: signedData.signedUrl
+  });
+}
     const statusLabels = {
       draft: "Draft",
       pending_pm: "Menunggu Persetujuan PM",
@@ -920,8 +1098,9 @@ async function loadMyProjects() {
               <th style="padding:12px;">Kode Proyek</th>
               <th style="padding:12px;">Nama Proyek</th>
               <th style="padding:12px;">Pemilik Proyek</th>
-              <th style="padding:12px;">Nilai Kontrak</th>
-              <th style="padding:12px;">Status</th>
+             <th style="padding:12px;">Nilai Kontrak</th>
+             <th style="padding:12px;">Dokumen Kontrak</th>
+             <th style="padding:12px;">Status</th>
               <th style="padding:12px;">Aksi</th>
             </tr>
           </thead>
@@ -932,9 +1111,28 @@ async function loadMyProjects() {
                 <td style="padding:12px;">${safeText(project.project_name)}</td>
                 <td style="padding:12px;">${safeText(project.client_name)}</td>
                 <td style="padding:12px;white-space:nowrap;">
-                  Rp ${Number(project.contract_value || 0).toLocaleString("id-ID")}
-                </td>
-                <td style="padding:12px;">
+  Rp ${Number(project.contract_value || 0).toLocaleString("id-ID")}
+</td>
+
+<td style="padding:12px;min-width:180px;">
+  ${
+    (documentsByProject[project.id] || []).length > 0
+      ? documentsByProject[project.id].map(doc => `
+          <div style="margin-bottom:7px;">
+            <a
+              href="${safeText(doc.url)}"
+              target="_blank"
+              rel="noopener noreferrer"
+              style="color:#2563eb;text-decoration:none;font-weight:600;">
+              ${safeText(doc.type)} - Unduh PDF
+            </a>
+          </div>
+        `).join("")
+      : '<span style="color:#dc2626;">Belum ada dokumen</span>'
+  }
+</td>
+
+<td style="padding:12px;">
                   ${safeText(statusLabels[project.approval_status] || project.approval_status)}
                   ${project.revision_note ? `
                     <div style="margin-top:5px;color:#dc2626;">
@@ -1110,7 +1308,8 @@ loadMyProjects();
         }).format(Number(angka));
   });
 
-  // SIMPAN PENGAJUAN PROYEK
+  
+// SIMPAN PENGAJUAN PROYEK
 
 projectForm.addEventListener("submit", async function(e) {
   e.preventDefault();
@@ -1141,6 +1340,9 @@ projectForm.addEventListener("submit", async function(e) {
   const endDate =
     document.getElementById("end-date").value;
 
+  const spkFile = spkInput.files[0] || null;
+  const poFile = poInput.files[0] || null;
+
   if (!projectName) {
     projectMessage.style.color = "#dc2626";
     projectMessage.textContent = "Nama proyek wajib diisi.";
@@ -1167,6 +1369,11 @@ projectForm.addEventListener("submit", async function(e) {
     return;
   }
 
+  if (!validateProjectDocument(spkFile) ||
+      !validateProjectDocument(poFile)) {
+    return;
+  }
+
   projectMessage.style.color = "#64748b";
   projectMessage.textContent = "Sedang menyimpan data proyek...";
 
@@ -1180,6 +1387,9 @@ projectForm.addEventListener("submit", async function(e) {
     if (userError || !userData.user) {
       throw new Error("Sesi login tidak ditemukan. Silakan login kembali.");
     }
+
+    let projectId = editingProjectId;
+    let isNewProject = !editingProjectId;
 
     if (editingProjectId) {
 
@@ -1200,19 +1410,17 @@ projectForm.addEventListener("submit", async function(e) {
       if (error) throw error;
 
       if (updateResult?.success === false) {
-        throw new Error(updateResult.message || "Perubahan proyek gagal disimpan.");
+        throw new Error(
+          updateResult.message || "Perubahan proyek gagal disimpan."
+        );
       }
-
-      projectMessage.style.color = "#15803d";
-      projectMessage.textContent =
-        "Perubahan proyek berhasil disimpan.";
 
     } else {
 
       // MODE BARU: SIMPAN PROYEK SEBAGAI DRAFT
       const projectCode = "GMP-" + Date.now();
 
-      const { error } = await supabaseClient
+      const { data: newProject, error } = await supabaseClient
         .from("projects")
         .insert({
           project_code: projectCode,
@@ -1228,14 +1436,41 @@ projectForm.addEventListener("submit", async function(e) {
           progress: 0,
           approval_status: "draft",
           created_by: userData.user.id
-        });
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
 
-      projectMessage.style.color = "#15803d";
-      projectMessage.textContent =
-        "Pengajuan proyek berhasil disimpan sebagai Draft.";
+      projectId = newProject.id;
     }
+
+    // UPLOAD DOKUMEN SPK
+    if (spkFile) {
+      projectMessage.textContent = "Sedang mengunggah dokumen SPK...";
+
+      await uploadProjectDocument(
+        projectId,
+        "SPK",
+        spkFile
+      );
+    }
+
+    // UPLOAD DOKUMEN PO
+    if (poFile) {
+      projectMessage.textContent = "Sedang mengunggah dokumen PO...";
+
+      await uploadProjectDocument(
+        projectId,
+        "PO",
+        poFile
+      );
+    }
+
+    projectMessage.style.color = "#15803d";
+    projectMessage.textContent = isNewProject
+      ? "Proyek berhasil disimpan sebagai Draft."
+      : "Perubahan proyek dan dokumen berhasil disimpan.";
 
     // KEMBALI KE MODE TAMBAH PROYEK
     editingProjectId = null;
