@@ -1049,10 +1049,12 @@ const { data: documents, error: documentError } =
       project_id,
       document_type,
       file_path,
-      file_name
+      file_name,
+      is_current,
+      created_at
     `)
     .in("project_id", projectIds)
-    .eq("is_current", true);
+    .order("created_at", { ascending: false });
 
 if (documentError) throw documentError;
 
@@ -1075,11 +1077,13 @@ for (const doc of (documents || [])) {
     documentsByProject[doc.project_id] = [];
   }
 
-  documentsByProject[doc.project_id].push({
-    type: doc.document_type,
-    name: doc.file_name,
-    url: signedData.signedUrl
-  });
+ documentsByProject[doc.project_id].push({
+  type: doc.document_type,
+  name: doc.file_name,
+  url: signedData.signedUrl,
+  uploadedAt: doc.created_at,
+  isCurrent: doc.is_current
+});
 }
     const statusLabels = {
       draft: "Draft",
@@ -1117,19 +1121,43 @@ for (const doc of (documents || [])) {
 <td style="padding:12px;min-width:180px;">
   ${
     (documentsByProject[project.id] || []).length > 0
-      ? documentsByProject[project.id].map(doc => `
-          <div style="margin-bottom:7px;">
-            <a
-              href="${safeText(doc.url)}"
-              target="_blank"
-              rel="noopener noreferrer"
-              style="color:#2563eb;text-decoration:none;font-weight:600;">
-              ${safeText(doc.type)} - Unduh PDF
-            </a>
-          </div>
-        `).join("")
-      : '<span style="color:#dc2626;">Belum ada dokumen</span>'
-  }
+  ? documentsByProject[project.id].map(doc => `
+      <div style="
+        margin-bottom:10px;
+        padding:8px;
+        border:1px solid #e5e7eb;
+        border-radius:6px;
+      ">
+        <div style="font-weight:600;color:#1f2937;">
+          ${safeText(doc.type)}
+          ${doc.isCurrent
+            ? '<span style="color:#16a34a;">(Versi Terbaru)</span>'
+            : '<span style="color:#6b7280;">(Riwayat Lama)</span>'
+          }
+        </div>
+
+        <div style="font-size:12px;color:#6b7280;margin:4px 0;">
+          ${safeText(doc.name)}
+        </div>
+
+        <div style="font-size:11px;color:#6b7280;margin-bottom:5px;">
+          Upload: ${doc.uploadedAt
+            ? new Date(doc.uploadedAt).toLocaleString("id-ID")
+            : "-"
+          }
+        </div>
+
+        <a
+          href="${safeText(doc.url)}"
+          target="_blank"
+          rel="noopener noreferrer"
+          style="color:#2563eb;text-decoration:none;font-weight:600;">
+          Unduh PDF
+        </a>
+      </div>
+    `).join("")
+  : '<span style="color:#dc2626;">Belum ada dokumen</span>'
+}
 </td>
 
 <td style="padding:12px;">
