@@ -2029,39 +2029,46 @@ if (currentUser) {
                 </span>
               </td>
 
-              <td>
-                ${
-                  user.role === "super_admin"
-                  ? '<strong>Administrator Utama</strong>'
-                  : `
-                    <button
-                      class="user-action-button"
-                      data-action="edit"
-                      data-id="${safe(user.id)}"
-                      data-name="${safe(user.full_name)}"
-                      data-role="${safe(user.role)}">
-                      Edit
-                    </button>
+              
+<td>
+  ${
+    user.role === "super_admin"
+      ? '<strong>Administrator Utama</strong>'
+      : `
+        <button
+          class="user-action-button"
+          data-action="edit"
+          data-id="${safe(user.id)}"
+          data-name="${safe(user.full_name)}"
+          data-role="${safe(user.role)}">
+          Edit
+        </button>
 
-                    <button
-                      class="user-action-button"
-                      data-action="toggle"
-                      ${isSuperAdmin ? `
-  <button
-    class="user-action-button"
-    data-action="delete"
-    data-id="${safe(user.id)}"
-    style="background:#fee2e2;color:#b91c1c;">
-    Hapus
-  </button>
-` : ""}
-                      data-id="${safe(user.id)}"
-                      data-active="${user.is_active}">
-                      ${user.is_active ? "Nonaktifkan" : "Aktifkan"}
-                    </button>
-                  `
-                }
-              </td>
+        <button
+          class="user-action-button"
+          data-action="toggle"
+          data-id="${safe(user.id)}"
+          data-active="${user.is_active}">
+          ${user.is_active ? "Nonaktifkan" : "Aktifkan"}
+        </button>
+
+        ${
+          isSuperAdmin
+            ? `
+              <button
+                class="user-action-button"
+                data-action="delete"
+                data-id="${safe(user.id)}"
+                style="background:#fee2e2;color:#b91c1c;">
+                Hapus
+              </button>
+            `
+            : ""
+        }
+      `
+  }
+</td>
+
             </tr>
           `).join("")}
         </tbody>
