@@ -3415,7 +3415,7 @@ if (forgotPasswordLink) {
         'Jika email terdaftar, tautan reset password akan dikirim. Silakan periksa kotak masuk atau folder spam.';
     } catch (error) {
       message.style.color = '#b91c1c';
-      message.textContent = 'Gagal mengirim permintaan reset password. Silakan coba lagi.';
+      message.textContent = 'Gagal: ' + error.message;
       console.error('RESET PASSWORD ERROR:', error);
     }
   });
