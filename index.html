@@ -1168,46 +1168,36 @@ for (const doc of (documents || [])) {
                     </div>
                   ` : ""}
                 </td>
-                <td style="padding:12px;white-space:nowrap;">
+                
+<td style="padding:12px;white-space:nowrap;">
   ${
     ["draft", "revision"].includes(project.approval_status)
       ? `
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:row;align-items:center;gap:8px;">
 
-  <button
-    type="button"
-    class="edit-project-button"
-    data-id="${safeText(project.id)}"
-    style="background:#2563eb;color:white;border:0;padding:13px 18px;border-radius:11px;cursor:pointer;">
-    Edit
-  </button>
+          <button
+            type="button"
+            class="edit-project-button"
+            data-id="${safeText(project.id)}"
+            style="background:#2563eb;color:white;border:0;padding:11px 16px;border-radius:8px;cursor:pointer;">
+            Edit
+          </button>
 
-  ${project.approval_status === "draft" ? `
-    <button
-      type="button"
-      class="delete-project-button"
-      data-id="${safeText(project.id)}"
-      style="background:#dc2626;color:white;border:0;padding:13px 18px;border-radius:11px;cursor:pointer;">
-      Hapus
-    </button>
-  ` : ""}
+          ${project.approval_status === "draft" ? `
+            <button
+              type="button"
+              class="delete-project-button"
+              data-id="${safeText(project.id)}"
+              style="background:#dc2626;color:white;border:0;padding:11px 16px;border-radius:8px;cursor:pointer;">
+              Hapus
+            </button>
+          ` : ""}
 
-</div>
           <button
             type="button"
             class="submit-project-button"
             data-id="${safeText(project.id)}"
-            style="background:#2563eb;color:white;border:0;padding:13px 18px;border-radius:11px;cursor:pointer;font-size:16px;font-weight:600;display:inline-flex;align-items:center;gap:10px;">
-
-            <svg xmlns="http://www.w3.org/2000/svg"
-                 width="18" height="18"
-                 viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor"
-                 stroke-width="2" stroke-linecap="round"
-                 stroke-linejoin="round">
-              <path d="m22 2-7 20-4-9-9-4Z"/>
-              <path d="M22 2 11 13"/>
-            </svg>
+            style="background:#2563eb;color:white;border:0;padding:11px 16px;border-radius:8px;cursor:pointer;font-weight:600;">
             Submit
           </button>
 
@@ -1216,6 +1206,7 @@ for (const doc of (documents || [])) {
       : `<span style="color:#94a3b8;">Terkunci</span>`
   }
 </td>
+
               </tr>
             `).join("")}
           </tbody>
