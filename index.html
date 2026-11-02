@@ -3404,7 +3404,7 @@ if (forgotPasswordLink) {
       const { error } = await supabaseClient.auth.resetPasswordForEmail(
         email.trim(),
         {
-          redirectTo: 'https://dino9614.github.io/cims-contractor/'
+          redirectTo: 'https://dino9614.github.io/cims-contractor/reset-password.html'
         }
       );
 
