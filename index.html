@@ -1172,16 +1172,27 @@ for (const doc of (documents || [])) {
   ${
     ["draft", "revision"].includes(project.approval_status)
       ? `
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
 
-          <button
-            type="button"
-            class="edit-project-button"
-            data-id="${safeText(project.id)}"
-            style="background:#2563eb;color:white;border:0;padding:13px 18px;border-radius:11px;cursor:pointer;">
-            Edit
-          </button>
+  <button
+    type="button"
+    class="edit-project-button"
+    data-id="${safeText(project.id)}"
+    style="background:#2563eb;color:white;border:0;padding:13px 18px;border-radius:11px;cursor:pointer;">
+    Edit
+  </button>
 
+  ${project.approval_status === "draft" ? `
+    <button
+      type="button"
+      class="delete-project-button"
+      data-id="${safeText(project.id)}"
+      style="background:#dc2626;color:white;border:0;padding:13px 18px;border-radius:11px;cursor:pointer;">
+      Hapus
+    </button>
+  ` : ""}
+
+</div>
           <button
             type="button"
             class="submit-project-button"
@@ -1213,59 +1224,86 @@ for (const doc of (documents || [])) {
     `;
 
     // AKSI TOMBOL EDIT PROYEK
-    projectList.querySelectorAll(".edit-project-button").forEach(button => {
-      button.addEventListener("click", async function() {
+    // AKSI TOMBOL HAPUS PROYEK DRAFT
+projectList.querySelectorAll(".delete-project-button").forEach(button => {
+  button.addEventListener("click", async function() {
 
-        const projectId = this.dataset.id;
+    const projectId = this.dataset.id;
 
-        const selectedProject = projects.find(
-          project => project.id === projectId
-        );
+    const selectedProject = projects.find(
+      project => project.id === projectId
+    );
 
-        if (!selectedProject) {
-          alert("Data proyek tidak ditemukan.");
-          return;
+    if (!selectedProject) {
+      alert("Data proyek tidak ditemukan.");
+      return;
+    }
+
+    if (selectedProject.approval_status !== "draft") {
+      alert("Hanya proyek Draft yang dapat dihapus.");
+      return;
+    }
+
+    const confirmation = confirm(
+      'Yakin ingin menghapus proyek "' +
+      selectedProject.project_name +
+      '"?\n\nData proyek dan dokumen PO/SPK akan dihapus.'
+    );
+
+    if (!confirmation) return;
+
+    this.disabled = true;
+    this.textContent = "Menghapus...";
+
+    try {
+      // Ambil lokasi file dokumen
+      const { data: docs, error: docError } =
+        await supabaseClient
+          .from("project_documents")
+          .select("file_path")
+          .eq("project_id", projectId);
+
+      if (docError) throw docError;
+
+      // Hapus file PDF dari Storage terlebih dahulu
+      const filePaths = (docs || []).map(doc => doc.file_path);
+
+      if (filePaths.length > 0) {
+        const { error: storageError } =
+          await supabaseClient
+            .storage
+            .from("dokumen-proyek")
+            .remove(filePaths);
+
+        if (storageError) throw storageError;
+      }
+
+      // Hapus data proyek melalui RPC
+      const { data, error } = await supabaseClient.rpc(
+        "delete_project_draft",
+        {
+          p_project_id: projectId
         }
+      );
 
-        // Pastikan pilihan klien dan area sudah dimuat
-        await loadProjectClients();
+      if (error) throw error;
 
-        // Aktifkan mode edit
-        editingProjectId = selectedProject.id;
+      if (data && data.success === false) {
+        throw new Error(data.message || "Penghapusan gagal.");
+      }
 
-        // Isi kembali formulir
-        document.getElementById("project-name").value =
-          selectedProject.project_name || "";
+      alert("Proyek Draft berhasil dihapus.");
 
-        clientSelect.value =
-          selectedProject.client_id + "|" + (selectedProject.area_id || "");
+      await loadMyProjects();
 
-        document.getElementById("contract-reference").value =
-          selectedProject.contract_reference || "";
+    } catch (error) {
+      alert("Gagal menghapus proyek: " + error.message);
+      this.disabled = false;
+      this.textContent = "Hapus";
+    }
 
-        contractInput.value =
-          Number(selectedProject.contract_value || 0).toLocaleString("id-ID");
-
-        document.getElementById("start-date").value =
-          selectedProject.start_date || "";
-
-        document.getElementById("end-date").value =
-          selectedProject.end_date || "";
-
-        // Ubah tombol simpan
-        saveButton.textContent = "Simpan Perubahan";
-
-        projectMessage.style.color = "#2563eb";
-        projectMessage.textContent =
-          "Mode edit aktif. Silakan periksa dan ubah data proyek.";
-
-        // Arahkan layar ke formulir
-        projectForm.scrollIntoView({
-          behavior: "smooth",
-          block: "start"
-        });
-      });
-    });
+  });
+});
 // AKSI TOMBOL SUBMIT PENGAJUAN KE PM
 projectList.querySelectorAll(".submit-project-button").forEach(button => {
   button.addEventListener("click", async function() {
