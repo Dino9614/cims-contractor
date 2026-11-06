@@ -2496,7 +2496,15 @@ await loadUsers();
           <div class="company-field"><label for="contractor-company-email">Email</label><input id="contractor-company-email" type="email" placeholder="Email perusahaan"></div>
           <div class="company-field"><label for="contractor-company-website">Website</label><input id="contractor-company-website" type="text" placeholder="Website perusahaan"></div>
           <div class="company-field"><label for="contractor-company-contact">Contact Person</label><input id="contractor-company-contact" type="text" placeholder="Nama contact person"></div>
-          <div class="company-field"><label for="contractor-company-logo">URL Logo</label><input id="contractor-company-logo" type="url" placeholder="https://... (opsional)"></div>
+          <div class="company-field">
+            <label for="contractor-company-logo">Upload Logo Perusahaan</label>
+            <input id="contractor-company-logo" type="file" accept="image/png,image/jpeg,image/webp" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:7px;">
+            <small style="display:block;color:#64748b;margin-top:6px;">Format PNG, JPG, atau WEBP. Maksimal 2 MB. Kosongkan jika tidak ingin mengganti logo.</small>
+            <div id="contractor-company-logo-preview-wrap" style="display:none;margin-top:10px;">
+              <img id="contractor-company-logo-preview" alt="Preview logo perusahaan" style="max-width:150px;max-height:100px;object-fit:contain;border:1px solid #e2e8f0;border-radius:8px;padding:6px;background:#fff;">
+              <div id="contractor-company-logo-current-label" style="font-size:12px;color:#64748b;margin-top:5px;"></div>
+            </div>
+          </div>
           <div class="company-field"><label for="contractor-company-address">Alamat</label><textarea id="contractor-company-address" placeholder="Alamat perusahaan"></textarea></div>
         </div>
         <div style="margin-top:16px;display:flex;align-items:center;gap:9px;">
@@ -2525,13 +2533,71 @@ await loadUsers();
     "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
   })[char]);
 
+  let currentCompanyLogoUrl = null;
+  let selectedCompanyLogoPreviewUrl = null;
+
+  function clearCompanyLogoPreview() {
+    if (selectedCompanyLogoPreviewUrl) URL.revokeObjectURL(selectedCompanyLogoPreviewUrl);
+    selectedCompanyLogoPreviewUrl = null;
+    const wrap = document.getElementById("contractor-company-logo-preview-wrap");
+    const preview = document.getElementById("contractor-company-logo-preview");
+    const label = document.getElementById("contractor-company-logo-current-label");
+    wrap.style.display = "none";
+    preview.removeAttribute("src");
+    label.textContent = "";
+  }
+
+  function showCompanyLogoPreview(url, labelText) {
+    const wrap = document.getElementById("contractor-company-logo-preview-wrap");
+    const preview = document.getElementById("contractor-company-logo-preview");
+    document.getElementById("contractor-company-logo-current-label").textContent = labelText || "";
+    preview.src = url;
+    wrap.style.display = "block";
+  }
+
   function resetContractorCompanyForm() {
     companyForm.reset();
     document.getElementById("contractor-company-id").value = "";
     document.getElementById("contractor-company-active").checked = true;
     document.getElementById("company-form-title").textContent = "Profil Perusahaan Baru";
     companySaveButton.textContent = "Simpan Perusahaan";
+    currentCompanyLogoUrl = null;
+    clearCompanyLogoPreview();
     companyMessage.textContent = "";
+  }
+
+  document.getElementById("contractor-company-logo").addEventListener("change", function() {
+    const file = this.files && this.files[0];
+    if (!file) {
+      clearCompanyLogoPreview();
+      if (currentCompanyLogoUrl) showCompanyLogoPreview(currentCompanyLogoUrl, "Logo saat ini tetap digunakan.");
+      return;
+    }
+    const allowedTypes = ["image/png", "image/jpeg", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      this.value = "";
+      alert("Logo harus berformat PNG, JPG, atau WEBP.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      this.value = "";
+      alert("Ukuran file logo maksimal 2 MB.");
+      return;
+    }
+    clearCompanyLogoPreview();
+    selectedCompanyLogoPreviewUrl = URL.createObjectURL(file);
+    showCompanyLogoPreview(selectedCompanyLogoPreviewUrl, "Preview logo yang akan diunggah.");
+  });
+
+  async function uploadContractorCompanyLogo(file, companyId) {
+    const extension = file.name.split(".").pop().toLowerCase();
+    const filePath = `${companyId}/${crypto.randomUUID()}.${extension}`;
+    const { error: uploadError } = await supabaseClient.storage
+      .from("company-logos")
+      .upload(filePath, file, { cacheControl: "3600", upsert: false, contentType: file.type });
+    if (uploadError) throw uploadError;
+    const { data } = supabaseClient.storage.from("company-logos").getPublicUrl(filePath);
+    return data.publicUrl;
   }
 
   async function loadContractorCompanies() {
@@ -2583,7 +2649,10 @@ await loadUsers();
         document.getElementById("contractor-company-email").value = company.email ?? "";
         document.getElementById("contractor-company-website").value = company.website ?? "";
         document.getElementById("contractor-company-contact").value = company.contact_person ?? "";
-        document.getElementById("contractor-company-logo").value = company.logo_url ?? "";
+        document.getElementById("contractor-company-logo").value = "";
+        currentCompanyLogoUrl = company.logo_url ?? null;
+        clearCompanyLogoPreview();
+        if (currentCompanyLogoUrl) showCompanyLogoPreview(currentCompanyLogoUrl, "Logo saat ini. Pilih file baru jika ingin mengganti.");
         document.getElementById("contractor-company-active").checked = !!company.is_active;
         document.getElementById("company-form-title").textContent = "Edit Profil Perusahaan";
         companySaveButton.textContent = "Simpan Perubahan";
@@ -2602,6 +2671,7 @@ await loadUsers();
     companyMessage.textContent = "";
 
     const companyId = document.getElementById("contractor-company-id").value;
+    const logoFile = document.getElementById("contractor-company-logo").files[0] || null;
     const companyData = {
       company_name: document.getElementById("contractor-company-name").value.trim(),
       npwp: document.getElementById("contractor-company-npwp").value.trim() || null,
@@ -2610,25 +2680,30 @@ await loadUsers();
       email: document.getElementById("contractor-company-email").value.trim() || null,
       website: document.getElementById("contractor-company-website").value.trim() || null,
       contact_person: document.getElementById("contractor-company-contact").value.trim() || null,
-      logo_url: document.getElementById("contractor-company-logo").value.trim() || null,
+      logo_url: currentCompanyLogoUrl,
       is_active: document.getElementById("contractor-company-active").checked,
       updated_at: new Date().toISOString()
     };
 
     try {
-      let result;
+      // Simpan dahulu untuk memperoleh ID perusahaan baru, lalu unggah logo ke Storage.
       if (companyId) {
-        result = await supabaseClient.from("companies").update(companyData).eq("id", companyId);
+        if (logoFile) companyData.logo_url = await uploadContractorCompanyLogo(logoFile, companyId);
+        const result = await supabaseClient.from("companies").update(companyData).eq("id", companyId);
+        if (result.error) throw result.error;
       } else {
-        result = await supabaseClient.from("companies").insert(companyData);
+        const insertResult = await supabaseClient.from("companies").insert(companyData).select("id").single();
+        if (insertResult.error) throw insertResult.error;
+        if (logoFile) {
+          companyData.logo_url = await uploadContractorCompanyLogo(logoFile, insertResult.data.id);
+          const logoUpdate = await supabaseClient.from("companies").update({ logo_url: companyData.logo_url }).eq("id", insertResult.data.id);
+          if (logoUpdate.error) throw logoUpdate.error;
+        }
       }
-      if (result.error) throw result.error;
 
       companyMessage.style.color = "#15803d";
       companyMessage.textContent = companyId ? "Data perusahaan berhasil diperbarui." : "Data perusahaan berhasil disimpan.";
       resetContractorCompanyForm();
-      companyMessage.style.color = "#15803d";
-      companyMessage.textContent = "Data perusahaan berhasil disimpan.";
       await loadContractorCompanies();
     } catch (error) {
       companyMessage.style.color = "#b91c1c";
