@@ -2353,6 +2353,42 @@ await loadUsers();
           color:#174b80;
           font-size:24px;
           margin-bottom:18px;
+        ">🏗️</div>
+
+        <h3 style="margin:0 0 8px;color:#263445;font-size:18px;">
+          Data Perusahaan Kontraktor
+        </h3>
+
+        <p style="margin:0 0 22px;color:#718096;font-size:13px;line-height:1.7;">
+          Kelola profil perusahaan kontraktor yang terdaftar di PERSADA APPS.
+        </p>
+
+        <button
+          onclick="showPage('Data Perusahaan Kontraktor', this)"
+          style="background:#174b80;color:#ffffff;border:none;border-radius:8px;padding:12px 20px;font-size:13px;font-weight:600;cursor:pointer;"
+        >
+          Buka Data Perusahaan →
+        </button>
+      </div>
+
+      <div style="
+        background:#ffffff;
+        border:1px solid #e5eaf0;
+        border-radius:14px;
+        padding:26px;
+        box-shadow:0 4px 14px rgba(20,40,70,0.05);
+      ">
+        <div style="
+          width:48px;
+          height:48px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          border-radius:12px;
+          background:#eaf2fb;
+          color:#174b80;
+          font-size:24px;
+          margin-bottom:18px;
         ">🏢</div>
 
         <h3 style="margin:0 0 8px;color:#263445;font-size:18px;">
@@ -2428,6 +2464,198 @@ await loadUsers();
 
     </div>
   `;
+
+} else if (page === "Data Perusahaan Kontraktor") {
+
+  content.innerHTML = `
+    <style>
+      .company-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+      .company-field label { display:block; margin-bottom:6px; color:#475569; font-size:13px; font-weight:600; }
+      .company-field input, .company-field textarea { width:100%; box-sizing:border-box; padding:11px 12px; border:1px solid #cbd5e1; border-radius:7px; font:inherit; background:#fff; }
+      .company-field textarea { min-height:76px; resize:vertical; }
+      .company-actions { display:flex; gap:8px; flex-wrap:wrap; }
+      .company-primary { background:#174b80; color:#fff; border:0; border-radius:7px; padding:11px 18px; cursor:pointer; font-weight:600; }
+      .company-secondary { background:#e2e8f0; color:#334155; border:0; border-radius:7px; padding:11px 18px; cursor:pointer; font-weight:600; }
+      @media(max-width:700px) { .company-grid { grid-template-columns:1fr; } }
+    </style>
+
+    <div style="margin-bottom:22px;">
+      <h2 style="margin:0 0 6px;color:#263445;">Data Perusahaan Kontraktor</h2>
+      <p style="margin:0;color:#718096;font-size:13px;">Pengelolaan profil perusahaan kontraktor dalam sistem multi-company.</p>
+    </div>
+
+    <div class="panel">
+      <h3 id="company-form-title">Profil Perusahaan Baru</h3>
+      <p style="color:#718096;font-size:13px;">Isi data perusahaan secara manual. Form baru dimulai dalam keadaan kosong.</p>
+      <form id="contractor-company-form">
+        <input type="hidden" id="contractor-company-id">
+        <div class="company-grid">
+          <div class="company-field"><label for="contractor-company-name">Nama Perusahaan</label><input id="contractor-company-name" type="text" placeholder="Nama perusahaan" required></div>
+          <div class="company-field"><label for="contractor-company-npwp">NPWP</label><input id="contractor-company-npwp" type="text" placeholder="Nomor NPWP"></div>
+          <div class="company-field"><label for="contractor-company-phone">Nomor Telepon</label><input id="contractor-company-phone" type="text" placeholder="Nomor telepon"></div>
+          <div class="company-field"><label for="contractor-company-email">Email</label><input id="contractor-company-email" type="email" placeholder="Email perusahaan"></div>
+          <div class="company-field"><label for="contractor-company-website">Website</label><input id="contractor-company-website" type="text" placeholder="Website perusahaan"></div>
+          <div class="company-field"><label for="contractor-company-contact">Contact Person</label><input id="contractor-company-contact" type="text" placeholder="Nama contact person"></div>
+          <div class="company-field"><label for="contractor-company-logo">URL Logo</label><input id="contractor-company-logo" type="url" placeholder="https://... (opsional)"></div>
+          <div class="company-field"><label for="contractor-company-address">Alamat</label><textarea id="contractor-company-address" placeholder="Alamat perusahaan"></textarea></div>
+        </div>
+        <div style="margin-top:16px;display:flex;align-items:center;gap:9px;">
+          <input id="contractor-company-active" type="checkbox" checked style="width:auto;">
+          <label for="contractor-company-active" style="font-size:13px;color:#475569;">Perusahaan Aktif</label>
+        </div>
+        <div class="company-actions" style="margin-top:18px;">
+          <button class="company-primary" id="contractor-company-save" type="submit">Simpan Perusahaan</button>
+          <button class="company-secondary" id="contractor-company-reset" type="button">Kosongkan Form</button>
+        </div>
+        <p id="contractor-company-message" style="font-size:13px;"></p>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h3>Daftar Perusahaan Kontraktor</h3>
+      <p id="contractor-company-loading">Memuat data perusahaan...</p>
+      <div id="contractor-company-table" style="overflow-x:auto;"></div>
+    </div>
+  `;
+
+  const companyForm = document.getElementById("contractor-company-form");
+  const companyMessage = document.getElementById("contractor-company-message");
+  const companySaveButton = document.getElementById("contractor-company-save");
+  const companySafe = value => String(value ?? "").replace(/[&<>"']/g, char => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  })[char]);
+
+  function resetContractorCompanyForm() {
+    companyForm.reset();
+    document.getElementById("contractor-company-id").value = "";
+    document.getElementById("contractor-company-active").checked = true;
+    document.getElementById("company-form-title").textContent = "Profil Perusahaan Baru";
+    companySaveButton.textContent = "Simpan Perusahaan";
+    companyMessage.textContent = "";
+  }
+
+  async function loadContractorCompanies() {
+    const loading = document.getElementById("contractor-company-loading");
+    const table = document.getElementById("contractor-company-table");
+    loading.textContent = "Memuat data perusahaan...";
+
+    const { data, error } = await supabaseClient
+      .from("companies")
+      .select("id, company_name, npwp, address, phone, email, website, contact_person, logo_url, is_active, created_at")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      loading.textContent = "Gagal memuat data perusahaan: " + error.message;
+      table.innerHTML = "";
+      return;
+    }
+
+    loading.textContent = "";
+    if (!data || data.length === 0) {
+      table.innerHTML = '<p>Belum ada data perusahaan. Silakan isi form di atas.</p>';
+      return;
+    }
+
+    table.innerHTML = `
+      <table style="min-width:760px;width:100%;border-collapse:collapse;">
+        <thead><tr><th>Nama Perusahaan</th><th>NPWP</th><th>Telepon</th><th>Email</th><th>Status</th><th>Aksi</th></tr></thead>
+        <tbody>${data.map(company => `
+          <tr>
+            <td>${companySafe(company.company_name)}</td>
+            <td>${companySafe(company.npwp)}</td>
+            <td>${companySafe(company.phone)}</td>
+            <td>${companySafe(company.email)}</td>
+            <td>${company.is_active ? "Aktif" : "Nonaktif"}</td>
+            <td><button type="button" data-company-edit="${companySafe(company.id)}" style="background:#174b80;color:#fff;border:0;border-radius:6px;padding:7px 11px;cursor:pointer;">Edit</button></td>
+          </tr>`).join("")}</tbody>
+      </table>
+    `;
+
+    table.querySelectorAll("[data-company-edit]").forEach(button => {
+      button.addEventListener("click", () => {
+        const company = data.find(item => item.id === button.dataset.companyEdit);
+        if (!company) return;
+        document.getElementById("contractor-company-id").value = company.id;
+        document.getElementById("contractor-company-name").value = company.company_name ?? "";
+        document.getElementById("contractor-company-npwp").value = company.npwp ?? "";
+        document.getElementById("contractor-company-address").value = company.address ?? "";
+        document.getElementById("contractor-company-phone").value = company.phone ?? "";
+        document.getElementById("contractor-company-email").value = company.email ?? "";
+        document.getElementById("contractor-company-website").value = company.website ?? "";
+        document.getElementById("contractor-company-contact").value = company.contact_person ?? "";
+        document.getElementById("contractor-company-logo").value = company.logo_url ?? "";
+        document.getElementById("contractor-company-active").checked = !!company.is_active;
+        document.getElementById("company-form-title").textContent = "Edit Profil Perusahaan";
+        companySaveButton.textContent = "Simpan Perubahan";
+        companyMessage.textContent = "Mode edit: " + company.company_name;
+        document.getElementById("contractor-company-form").scrollIntoView({ behavior:"smooth", block:"start" });
+      });
+    });
+  }
+
+  document.getElementById("contractor-company-reset").addEventListener("click", resetContractorCompanyForm);
+
+  companyForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+    companySaveButton.disabled = true;
+    companySaveButton.textContent = "Menyimpan...";
+    companyMessage.textContent = "";
+
+    const companyId = document.getElementById("contractor-company-id").value;
+    const companyData = {
+      company_name: document.getElementById("contractor-company-name").value.trim(),
+      npwp: document.getElementById("contractor-company-npwp").value.trim() || null,
+      address: document.getElementById("contractor-company-address").value.trim() || null,
+      phone: document.getElementById("contractor-company-phone").value.trim() || null,
+      email: document.getElementById("contractor-company-email").value.trim() || null,
+      website: document.getElementById("contractor-company-website").value.trim() || null,
+      contact_person: document.getElementById("contractor-company-contact").value.trim() || null,
+      logo_url: document.getElementById("contractor-company-logo").value.trim() || null,
+      is_active: document.getElementById("contractor-company-active").checked,
+      updated_at: new Date().toISOString()
+    };
+
+    try {
+      let result;
+      if (companyId) {
+        result = await supabaseClient.from("companies").update(companyData).eq("id", companyId);
+      } else {
+        result = await supabaseClient.from("companies").insert(companyData);
+      }
+      if (result.error) throw result.error;
+
+      companyMessage.style.color = "#15803d";
+      companyMessage.textContent = companyId ? "Data perusahaan berhasil diperbarui." : "Data perusahaan berhasil disimpan.";
+      resetContractorCompanyForm();
+      companyMessage.style.color = "#15803d";
+      companyMessage.textContent = "Data perusahaan berhasil disimpan.";
+      await loadContractorCompanies();
+    } catch (error) {
+      companyMessage.style.color = "#b91c1c";
+      companyMessage.textContent = "Gagal menyimpan data: " + error.message;
+    } finally {
+      companySaveButton.disabled = false;
+      companySaveButton.textContent = document.getElementById("contractor-company-id").value ? "Simpan Perubahan" : "Simpan Perusahaan";
+    }
+  });
+
+  const { data: currentUserData, error: currentUserError } = await supabaseClient.auth.getUser();
+  if (currentUserError || !currentUserData.user) {
+    companyMessage.style.color = "#b91c1c";
+    companyMessage.textContent = "Sesi login tidak ditemukan. Silakan login kembali.";
+  } else {
+    const { data: currentProfile, error: currentProfileError } = await supabaseClient
+      .from("profiles").select("role").eq("id", currentUserData.user.id).single();
+    if (currentProfileError) {
+      companyMessage.style.color = "#b91c1c";
+      companyMessage.textContent = "Gagal memeriksa hak akses: " + currentProfileError.message;
+    } else if (currentProfile.role !== "super_admin") {
+      companyForm.style.display = "none";
+      document.getElementById("contractor-company-loading").textContent = "Akses pengelolaan perusahaan hanya tersedia untuk Super Admin.";
+    } else {
+      await loadContractorCompanies();
+    }
+  }
 
 } else if (page === "Master Klien") {
 
